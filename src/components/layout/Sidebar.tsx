@@ -9,42 +9,118 @@ import {
   Send,
   PhoneForwarded,
   Layers,
-  Sparkles
+  ShoppingBag,
+  ClipboardList,
+  MonitorCheck,
+  HelpCircle,
+  MailCheck
 } from 'lucide-react';
 
+export type AppTab = 'CASES' | 'DASHBOARD' | 'ORDERS' | 'EMAILS';
+
 interface SidebarProps {
-  currentTab: 'CASES' | 'DASHBOARD';
-  setCurrentTab: (tab: 'CASES' | 'DASHBOARD') => void;
-  onOpenCreateCase?: () => void;
+  currentTab: AppTab;
+  setCurrentTab: (tab: AppTab) => void;
+  onOpenBulkReport?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentTab,
   setCurrentTab,
-  onOpenCreateCase
+  onOpenBulkReport
 }) => {
   const {
     role,
+    cases,
     statusFilter,
     setStatusFilter,
     counts
   } = useCases();
+  const sentEmailCount = cases.reduce((sum, c) => sum + (c.emails?.length || 0), 0);
+
+  // MyOrder side has its own, simpler navigation
+  if (role === 'MERCHANT' || role === 'MYORDER_ADMIN') {
+    return (
+      <aside className="sidebar-panel">
+        {role === 'MYORDER_ADMIN' && onOpenBulkReport && (
+          <button
+            type="button"
+            className="btn-myorder"
+            style={{ width: '100%', justifyContent: 'center', padding: '0.75rem 1rem' }}
+            onClick={onOpenBulkReport}
+          >
+            <Layers size={18} />
+            <span>แจ้งหลายเลขพัสดุพร้อมกัน</span>
+          </button>
+        )}
+        <div className="sidebar-card">
+          <div className="sidebar-title">MyOrder {role === 'MERCHANT' ? '(ร้านค้า)' : '(แอดมิน)'}</div>
+          {role === 'MERCHANT' ? (
+            <>
+              <button
+                type="button"
+                className={`nav-item-btn ${currentTab === 'ORDERS' ? 'active' : ''}`}
+                onClick={() => setCurrentTab('ORDERS')}
+              >
+                <div className="nav-item-left">
+                  <ShoppingBag size={18} />
+                  <span>จัดการคำสั่งซื้อ</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                className={`nav-item-btn ${currentTab === 'CASES' ? 'active' : ''}`}
+                onClick={() => setCurrentTab('CASES')}
+              >
+                <div className="nav-item-left">
+                  <ClipboardList size={18} />
+                  <span>ติดตามสถานะปัญหา</span>
+                </div>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={`nav-item-btn ${currentTab === 'CASES' ? 'active' : ''}`}
+                onClick={() => setCurrentTab('CASES')}
+              >
+                <div className="nav-item-left">
+                  <MonitorCheck size={18} />
+                  <span>Monitoring เคสร้านค้า</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                className={`nav-item-btn ${currentTab === 'EMAILS' ? 'active' : ''}`}
+                onClick={() => setCurrentTab('EMAILS')}
+              >
+                <div className="nav-item-left">
+                  <MailCheck size={18} />
+                  <span>อีเมลคำร้องที่ส่งแล้ว</span>
+                </div>
+                <span className="count-badge">{sentEmailCount}</span>
+              </button>
+            </>
+          )}
+        </div>
+
+        <div className="sidebar-card" style={{ fontSize: '0.78rem', color: 'var(--thp-slate)', lineHeight: 1.55 }}>
+          <div className="sidebar-title">ขั้นตอนการแจ้งปัญหา</div>
+          <div>1. ร้านค้ากด “แจ้งปัญหา” ที่คำสั่งซื้อที่จัดส่งแล้ว</div>
+          <div>2. เรื่องเข้าระบบ ปณ. และส่งตรงถึง CEC ปลายทาง</div>
+          <div style={{ display: 'flex', gap: '0.3rem' }}>
+            <HelpCircle size={13} style={{ flexShrink: 0, marginTop: 3, color: '#C2410C' }} />
+            <span>ถ้าพัสดุยังไม่ถึงปลายทาง CEC จะว่างไว้ก่อน และระบุอัตโนมัติเมื่อสถานะพัสดุอัปเดต</span>
+          </div>
+          <div>3. ร้านค้า แอดมิน MyOrder และ ปณ.ส่วนกลาง เห็นสถานะเดียวกัน</div>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside className="sidebar-panel">
-      {/* Primary Action Button */}
-      {role === 'ADMIN' && (
-        <button
-          type="button"
-          className="btn-primary"
-          style={{ width: '100%', justifyContent: 'center', padding: '0.75rem 1rem' }}
-          onClick={onOpenCreateCase}
-        >
-          <Sparkles size={18} />
-          <span>สร้างเคสใหม่ / AI วางแชท</span>
-        </button>
-      )}
-
       {/* Main Navigation Views */}
       <div className="sidebar-card">
         <div className="sidebar-title">มุมมองหลัก (Main View)</div>
@@ -58,8 +134,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>
               {role === 'CENTRAL'
                 ? 'Central Control Queue'
-                : role === 'ADMIN'
-                ? 'กล่องข้อความเคส (Inbox)'
                 : role === 'CEC'
                 ? 'คิวงานกลุ่ม CEC'
                 : 'คิวงานสาขาปลายทาง'}
@@ -98,14 +172,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           type="button"
-          className={`nav-item-btn ${statusFilter === 'NEW' ? 'active' : ''}`}
-          onClick={() => setStatusFilter('NEW')}
+          className={`nav-item-btn ${statusFilter === 'PENDING_CEC_ASSIGNMENT' ? 'active' : ''}`}
+          onClick={() => setStatusFilter('PENDING_CEC_ASSIGNMENT')}
         >
           <div className="nav-item-left">
-            <Inbox size={16} />
-            <span>เคสใหม่</span>
+            <HelpCircle size={16} />
+            <span>รอระบุ CEC</span>
           </div>
-          {counts.newCases > 0 && <span className="count-badge info">{counts.newCases}</span>}
+          {counts.pendingCec > 0 && <span className="count-badge warning">{counts.pendingCec}</span>}
         </button>
 
         <button

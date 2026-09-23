@@ -1,45 +1,46 @@
 import React from 'react';
 import type { CaseItem } from '../../types/case';
-import { AlertTriangle, ExternalLink, Link2 } from 'lucide-react';
+import { MerchantStatusBadge } from '../myorder/CaseProgress';
+import { AlertTriangle, Eye, PlusCircle } from 'lucide-react';
 
 interface DuplicateAlertProps {
   existingCase: CaseItem;
-  onLinkToExisting: () => void;
-  onViewExisting: () => void;
+  onFollowExisting: () => void;
+  onCreateNew: () => void;
 }
 
-export const DuplicateAlert: React.FC<DuplicateAlertProps> = ({
-  existingCase,
-  onLinkToExisting,
-  onViewExisting
-}) => {
+// Shown when a parcel already has a case that is not closed yet: follow that case, or open a new one anyway
+export const DuplicateAlert: React.FC<DuplicateAlertProps> = ({ existingCase, onFollowExisting, onCreateNew }) => {
+  const lastUpdate = existingCase.activityLogs[0];
   return (
     <div className="duplicate-alert-banner">
       <AlertTriangle size={24} style={{ flexShrink: 0, marginTop: '2px', color: '#D97706' }} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#92400E' }}>
-          ตรวจพบเคสเดิมที่ยังเปิดอยู่สำหรับเลขพัสดุนี้!
+          เลขพัสดุนี้เคยสร้างเคสแล้ว และเคสยังไม่ปิด
         </div>
-        <div style={{ fontSize: '0.84rem', color: '#B45309', lineHeight: 1.4 }}>
-          เคสรหัส <strong>{existingCase.id}</strong> (สร้างเมื่อ {new Date(existingCase.createdAt).toLocaleDateString('th-TH')}) 
-          สถานะปัจจุบัน: <strong>{existingCase.status}</strong> กำลังอยู่ในการดูแลของ {existingCase.assignedCecName || 'ปณ.ส่วนกลาง'}
+        <div style={{ fontSize: '0.84rem', color: '#B45309', lineHeight: 1.5, display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+            เคส <strong>{existingCase.id}</strong>
+            <MerchantStatusBadge status={existingCase.status} />
+          </div>
+          <div>
+            แจ้งเมื่อ {new Date(existingCase.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} • ร้าน{' '}
+            {existingCase.companyName} • ดูแลโดย {existingCase.assignedCecName || 'รอระบุ CEC'}
+          </div>
+          {lastUpdate && (
+            <div>
+              อัปเดตล่าสุด: {lastUpdate.action} ({new Date(lastUpdate.timestamp).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })})
+            </div>
+          )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.25rem' }}>
-          <button
-            type="button"
-            onClick={onLinkToExisting}
-            className="btn-warning"
-            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
-          >
-            <Link2 size={14} /> ผูกข้อความใหม่เข้าเคสเดิม (แนะนำ)
+        <div style={{ fontSize: '0.8rem', color: '#92400E' }}>ต้องการไปติดตามเคสเดิม หรือสร้างเคสใหม่?</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <button type="button" onClick={onFollowExisting} className="btn-myorder" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
+            <Eye size={14} /> ไปติดตามเคส {existingCase.id} (แนะนำ)
           </button>
-          <button
-            type="button"
-            onClick={onViewExisting}
-            className="btn-secondary"
-            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
-          >
-            <ExternalLink size={14} /> ดูรายละเอียดเคสเดิม
+          <button type="button" onClick={onCreateNew} className="btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
+            <PlusCircle size={14} /> สร้างเคสใหม่
           </button>
         </div>
       </div>

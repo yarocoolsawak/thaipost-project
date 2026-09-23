@@ -3,6 +3,7 @@ import type { CaseItem } from '../../types/case';
 import { useCases } from '../../context/CaseContext';
 import { SlaBadge } from './SlaBadge';
 import { TrackingTimeline } from './TrackingTimeline';
+import { DuplicateChip, OrderRefChip } from './CecAssignment';
 import {
   X,
   Building2,
@@ -26,7 +27,6 @@ interface CaseDetailModalProps {
   onOpenReviewAnswer?: (caseItem: CaseItem) => void;
   onOpenEscalateBranch?: (caseItem: CaseItem) => void;
   onOpenDispatchCec?: (caseItem: CaseItem) => void;
-  onOpenSendEmail?: (caseItem: CaseItem) => void;
 }
 
 export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
@@ -34,8 +34,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
   onClose,
   onOpenReviewAnswer,
   onOpenEscalateBranch,
-  onOpenDispatchCec,
-  onOpenSendEmail
+  onOpenDispatchCec
 }) => {
   const { role, addChatMessage, closeCase, cases } = useCases();
   const caseItem = cases.find(c => c.id === initialCaseItem.id) || initialCaseItem;
@@ -50,10 +49,12 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
     const senderName =
       role === 'CENTRAL'
         ? 'ปณ.ส่วนกลาง'
-        : role === 'ADMIN'
-        ? `Admin (${caseItem.companyName})`
         : role === 'CEC'
         ? `CEC ${caseItem.assignedCecId}`
+        : role === 'MERCHANT'
+        ? `${caseItem.contactPerson} (${caseItem.companyName})`
+        : role === 'MYORDER_ADMIN'
+        ? 'แอดมิน MyOrder'
         : 'สาขาปลายทาง';
 
     addChatMessage(caseItem.id, newChatText.trim(), role, senderName, isInternalNote);
@@ -90,6 +91,8 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
               {caseItem.trackingNumber}
             </span>
             <span className={`status-badge ${caseItem.status}`}>{caseItem.status}</span>
+            <OrderRefChip caseItem={caseItem} />
+            <DuplicateChip caseItem={caseItem} />
             <SlaBadge
               deadlineIso={caseItem.slaDeadline}
               isExceeded={caseItem.isSlaExceeded}
@@ -186,7 +189,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ fontWeight: 700, color: '#1D4ED8', fontSize: '0.95rem' }}>
-                      ⚡ คำตอบจาก CEC รอ ปณ.ส่วนกลาง ตรวจสอบก่อนส่งต่อ Admin (FR 07)
+                      ⚡ คำตอบจาก CEC รอ ปณ.ส่วนกลาง ตรวจสอบก่อนส่งกลับร้านค้า (FR 07)
                     </div>
                     <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
                       ตอบเมื่อ: {new Date(caseItem.cecReply.repliedAt).toLocaleTimeString('th-TH')} โดย {caseItem.cecReply.repliedBy}
@@ -216,7 +219,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                         className="btn-primary"
                         onClick={() => onOpenReviewAnswer(caseItem)}
                       >
-                        <CheckCircle2 size={16} /> ตรวจสอบคำตอบ & ส่งให้ Admin
+                        <CheckCircle2 size={16} /> ตรวจสอบคำตอบ & ส่งให้ร้านค้า
                       </button>
                     </div>
                   )}
@@ -248,20 +251,14 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                       fontSize: '0.85rem'
                     }}
                   >
-                    <span style={{ color: 'var(--thp-muted)' }}>บริษัทคู่ค้า:</span>
+                    <span style={{ color: 'var(--thp-muted)' }}>ร้านค้า (MyOrder):</span>
                     <strong>{caseItem.companyName}</strong>
 
-                    <span style={{ color: 'var(--thp-muted)' }}>ผู้แจ้ง / ช่องทาง:</span>
-                    <span>
-                      {caseItem.contactPerson} ({caseItem.contactChannel})
-                    </span>
+                    <span style={{ color: 'var(--thp-muted)' }}>ผู้แจ้ง:</span>
+                    <span>{caseItem.contactPerson}</span>
 
-                    {caseItem.channelReference && (
-                      <>
-                        <span style={{ color: 'var(--thp-muted)' }}>กลุ่มอ้างอิง:</span>
-                        <span style={{ color: '#0284C7' }}>{caseItem.channelReference}</span>
-                      </>
-                    )}
+                    <span style={{ color: 'var(--thp-muted)' }}>คำสั่งซื้อ:</span>
+                    <span style={{ color: '#0F766E', fontWeight: 600 }}>{caseItem.myOrderRef.orderId}</span>
 
                     <span style={{ color: 'var(--thp-muted)' }}>หมวดปัญหา:</span>
                     <span className="category-chip" style={{ width: 'fit-content' }}>
@@ -292,7 +289,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
                   <div style={{ marginTop: '0.5rem' }}>
                     <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--thp-muted)' }}>
-                      ข้อความที่ลูกค้าหรือคู่ค้าแจ้ง:
+                      ข้อความที่ร้านค้าแจ้ง:
                     </div>
                     <div
                       style={{
@@ -347,7 +344,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
                     <span style={{ color: 'var(--thp-muted)' }}>กลุ่ม CEC ที่ดูแล:</span>
                     <span style={{ color: '#4338CA', fontWeight: 600 }}>
-                      {caseItem.assignedCecName || 'ยังไม่กำหนด'}
+                      {caseItem.assignedCecName || 'รอระบุ CEC (สถานะพัสดุยังไม่ยืนยันปลายทาง)'}
                     </span>
 
                     <span style={{ color: 'var(--thp-muted)' }}>ผู้เซ็นรับ (POD):</span>
@@ -365,7 +362,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Central Review Completed Banner if sent to Admin */}
+              {/* Central Review Completed Banner once the answer is sent back to the shop */}
               {caseItem.centralReview && (
                 <div
                   style={{
@@ -380,7 +377,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#065F46', fontWeight: 700 }}>
                     <CheckCircle2 size={16} />
-                    <span>คำตอบผ่านการตรวจสอบโดย ปณ.ส่วนกลาง และส่งกลับ Admin แล้ว</span>
+                    <span>คำตอบผ่านการตรวจสอบโดย ปณ.ส่วนกลาง และส่งกลับร้านค้าผ่าน MyOrder แล้ว</span>
                   </div>
                   <div style={{ fontSize: '0.88rem', color: '#047857', background: '#FFFFFF', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid #D1FAE5' }}>
                     {caseItem.centralReview.approvedAnswer}
@@ -525,20 +522,10 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                     </span>
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--thp-muted)', marginTop: '2px' }}>
-                    ประวัติการส่งจดหมายอิเล็กทรอนิกส์แจ้งไปรษณีย์ไทย (เช่น แจ้งตีกลับ หรือขอเปลี่ยนแปลงข้อมูลผู้รับ)
+                    อีเมลคำร้องที่ร้านค้าส่งถึงไปรษณีย์ไทยผ่าน MyOrder (เช่น แจ้งตีกลับ หรือขอเปลี่ยนแปลงข้อมูลผู้รับ)
                   </div>
                 </div>
 
-                {role === 'ADMIN' && onOpenSendEmail && (
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => onOpenSendEmail(caseItem)}
-                    style={{ padding: '0.5rem 0.9rem', fontSize: '0.82rem' }}
-                  >
-                    <Mail size={14} /> ส่งอีเมลแจ้ง ปณท. เพิ่มเติม
-                  </button>
-                )}
               </div>
 
               {/* Email List or Empty State */}
@@ -574,18 +561,8 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                     ยังไม่มีประวัติการส่งอีเมลคำร้องสำหรับเคสนี้
                   </div>
                   <div style={{ fontSize: '0.82rem', color: 'var(--thp-muted)', maxWidth: '420px', lineHeight: 1.4 }}>
-                    หากต้องการส่งหนังสือแจ้งขอตีกลับพัสดุต้นทาง หรือขอแก้ไขข้อมูลที่อยู่จัดส่ง พร้อมแนบหลักฐาน สามารถกดปุ่มด้านล่าง
+                    ร้านค้าสามารถส่งหนังสือขอตีกลับพัสดุ ขอแก้ไขที่อยู่จัดส่ง หรือแนบหลักฐานเพิ่มเติม ได้จากหน้าเคสใน MyOrder
                   </div>
-                  {role === 'ADMIN' && onOpenSendEmail && (
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={() => onOpenSendEmail(caseItem)}
-                      style={{ marginTop: '0.5rem' }}
-                    >
-                      <Mail size={15} /> สร้างและส่งอีเมลแจ้ง ปณท.
-                    </button>
-                  )}
                 </div>
               ) : (
                 caseItem.emails.map((email, idx) => (
@@ -828,13 +805,16 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           {/* Central Role Actions */}
           {role === 'CENTRAL' && (
             <>
-              {(caseItem.status === 'NEW' || caseItem.status === 'CENTRAL_REVIEWING') && onOpenDispatchCec && (
+              {(caseItem.status === 'NEW' ||
+                caseItem.status === 'CENTRAL_REVIEWING' ||
+                (caseItem.assignedCecId === undefined && caseItem.status !== 'CLOSED')) &&
+                onOpenDispatchCec && (
                 <button
                   type="button"
                   className="btn-primary"
                   onClick={() => onOpenDispatchCec(caseItem)}
                 >
-                  <Send size={15} /> ส่งงานเข้า CEC 14 กลุ่ม
+                  <Send size={15} /> {caseItem.assignedCecId === undefined ? 'ระบุ CEC ผู้รับผิดชอบ' : 'ส่งงานเข้า CEC 14 กลุ่ม'}
                 </button>
               )}
 
@@ -866,12 +846,6 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             </>
           )}
 
-          {/* Admin Role Action */}
-          {role === 'ADMIN' && caseItem.status === 'ANSWER_SENT_TO_ADMIN' && (
-            <button type="button" className="btn-success" onClick={handleCloseCaseAction}>
-              <CheckCircle2 size={15} /> ได้รับคำตอบแล้ว ยืนยันปิดเคส
-            </button>
-          )}
         </div>
       </div>
     </div>

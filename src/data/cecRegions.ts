@@ -1,4 +1,4 @@
-import type { CecInfo } from '../types/case';
+import type { CecInfo, ParcelInfo } from '../types/case';
 
 export const CEC_REGIONS: CecInfo[] = [
   {
@@ -143,45 +143,57 @@ export const CEC_REGIONS: CecInfo[] = [
   }
 ];
 
-export function getCecByZipCodeOrProvince(zipCode: string, province?: string): CecInfo {
-  // Zip code prefix logic
-  if (!zipCode && !province) return CEC_REGIONS[0];
-  
-  const prefix = zipCode.slice(0, 2);
-  
-  if (prefix === '10' || prefix === '11') {
-    return CEC_REGIONS[0]; // CEC 1 / 2 BKK
-  } else if (prefix === '12' || prefix === '13' || prefix === '14' || prefix === '18') {
-    return CEC_REGIONS[2]; // CEC 3
-  } else if (prefix === '20' || prefix === '21' || prefix === '22' || prefix === '23' || prefix === '24' || prefix === '25') {
-    return CEC_REGIONS[3]; // CEC 4 East
-  } else if (prefix === '50' || prefix === '51' || prefix === '52' || prefix === '53' || prefix === '55' || prefix === '57' || prefix === '58') {
-    return CEC_REGIONS[4]; // CEC 5 Chiang Mai
-  } else if (prefix === '60' || prefix === '61' || prefix === '62' || prefix === '63' || prefix === '64' || prefix === '65' || prefix === '66' || prefix === '67') {
-    return CEC_REGIONS[5]; // CEC 6 Phitsanulok
-  } else if (prefix === '40' || prefix === '41' || prefix === '42' || prefix === '43' || prefix === '38') {
-    return CEC_REGIONS[6]; // CEC 7 Khon Kaen
-  } else if (prefix === '47' || prefix === '48' || prefix === '49' || prefix === '46' || prefix === '44' || prefix === '45') {
-    return CEC_REGIONS[7]; // CEC 8 Sakon Nakhon
-  } else if (prefix === '30' || prefix === '31' || prefix === '32' || prefix === '36') {
-    return CEC_REGIONS[8]; // CEC 9 Korat
-  } else if (prefix === '33' || prefix === '34' || prefix === '35' || prefix === '37') {
-    return CEC_REGIONS[9]; // CEC 10 Ubon
-  } else if (prefix === '70' || prefix === '71' || prefix === '72' || prefix === '73' || prefix === '74' || prefix === '75' || prefix === '76' || prefix === '77') {
-    return CEC_REGIONS[10]; // CEC 11 Ratchaburi
-  } else if (prefix === '80' || prefix === '81' || prefix === '82' || prefix === '83' || prefix === '84' || prefix === '85' || prefix === '86') {
-    return CEC_REGIONS[11]; // CEC 12 Surat Thani
-  } else if (prefix === '90' || prefix === '91' || prefix === '92' || prefix === '93') {
-    return CEC_REGIONS[12]; // CEC 13 Songkhla
-  } else if (prefix === '94' || prefix === '95' || prefix === '96') {
-    return CEC_REGIONS[13]; // CEC 14 Deep South
-  }
+const ZIP_PREFIX_TO_CEC_INDEX: Record<string, number> = {
+  '10': 0, '11': 0,                                              // CEC 1 / 2 BKK
+  '12': 2, '13': 2, '14': 2, '18': 2,                            // CEC 3
+  '20': 3, '21': 3, '22': 3, '23': 3, '24': 3, '25': 3,          // CEC 4 East
+  '50': 4, '51': 4, '52': 4, '53': 4, '55': 4, '57': 4, '58': 4, // CEC 5 Chiang Mai
+  '60': 5, '61': 5, '62': 5, '63': 5, '64': 5, '65': 5, '66': 5, '67': 5, // CEC 6 Phitsanulok
+  '38': 6, '40': 6, '41': 6, '42': 6, '43': 6,                   // CEC 7 Khon Kaen
+  '44': 7, '45': 7, '46': 7, '47': 7, '48': 7, '49': 7,          // CEC 8 Sakon Nakhon
+  '30': 8, '31': 8, '32': 8, '36': 8,                            // CEC 9 Korat
+  '33': 9, '34': 9, '35': 9, '37': 9,                            // CEC 10 Ubon
+  '70': 10, '71': 10, '72': 10, '73': 10, '74': 10, '75': 10, '76': 10, '77': 10, // CEC 11 Ratchaburi
+  '80': 11, '81': 11, '82': 11, '83': 11, '84': 11, '85': 11, '86': 11,           // CEC 12 Surat Thani
+  '90': 12, '91': 12, '92': 12, '93': 12,                        // CEC 13 Songkhla
+  '94': 13, '95': 13, '96': 13                                   // CEC 14 Deep South
+};
+
+// Strict lookup: returns undefined when the zip/province does not map to any CEC
+export function findCecByZipCodeOrProvince(zipCode?: string, province?: string): CecInfo | undefined {
+  const index = zipCode ? ZIP_PREFIX_TO_CEC_INDEX[zipCode.slice(0, 2)] : undefined;
+  if (index !== undefined) return CEC_REGIONS[index];
 
   // Fallback province matching
   if (province) {
-    const found = CEC_REGIONS.find(c => c.provinces.some(p => province.includes(p)));
-    if (found) return found;
+    return CEC_REGIONS.find(c => c.provinces.some(p => province.includes(p)));
   }
+  return undefined;
+}
 
-  return CEC_REGIONS[0];
+export function getCecByZipCodeOrProvince(zipCode: string, province?: string): CecInfo {
+  return findCecByZipCodeOrProvince(zipCode, province) || CEC_REGIONS[0];
+}
+
+// Track & Trace statuses that confirm the parcel has reached (or been handled by) its destination area
+const DESTINATION_CONFIRMED_STATUSES = [
+  'ถึงศูนย์คัดแยกปลายทาง',
+  'ถึงที่ทำการปลายทาง',
+  'เตรียมการนำจ่าย',
+  'นำจ่ายไม่สำเร็จ',
+  'นำจ่ายสำเร็จ'
+];
+
+export function isDestinationConfirmed(parcel: ParcelInfo): boolean {
+  return parcel.events.some(e => DESTINATION_CONFIRMED_STATUSES.includes(e.status));
+}
+
+/**
+ * Decide which CEC owns a case from the live parcel status.
+ * While the parcel is still in transit / misrouted we cannot tell which CEC should handle it,
+ * so the case stays blank until a later Track & Trace update confirms the destination.
+ */
+export function resolveCecFromParcel(parcel: ParcelInfo): CecInfo | undefined {
+  if (!isDestinationConfirmed(parcel)) return undefined;
+  return findCecByZipCodeOrProvince(parcel.destZipCode, parcel.destPostOffice);
 }

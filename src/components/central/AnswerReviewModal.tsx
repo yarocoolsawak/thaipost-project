@@ -76,7 +76,7 @@ export const AnswerReviewModal: React.FC<AnswerReviewModalProps> = ({ caseItem, 
               <strong>Case:</strong> {caseItem.id} ({caseItem.trackingNumber})
             </div>
             <div>
-              <strong>บริษัท:</strong> {caseItem.companyName}
+              <strong>ร้านค้า:</strong> {caseItem.companyName} ({caseItem.myOrderRef.orderId})
             </div>
             <div>
               <strong>ศูนย์ CEC:</strong> {caseItem.assignedCecName || 'CEC'}
@@ -167,7 +167,7 @@ export const AnswerReviewModal: React.FC<AnswerReviewModalProps> = ({ caseItem, 
           {/* Mode Form Content */}
           {mode === 'EDIT' && (
             <div className="form-group">
-              <label>ข้อความคำตอบที่ปรับแต่ง (จะส่งไปยัง Admin บริษัทคู่ค้า):</label>
+              <label>ข้อความคำตอบที่ปรับแต่ง (จะส่งกลับร้านค้าผ่าน MyOrder):</label>
               <textarea
                 className="form-control"
                 rows={4}
@@ -223,7 +223,7 @@ export const AnswerReviewModal: React.FC<AnswerReviewModalProps> = ({ caseItem, 
               </>
             ) : (
               <>
-                <Send size={16} /> ยืนยันและส่งคำตอบให้ Admin (Dispatch)
+                <Send size={16} /> ยืนยันและส่งคำตอบให้ร้านค้า (Dispatch)
               </>
             )}
           </button>

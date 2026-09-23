@@ -1,6 +1,6 @@
 import React from 'react';
 import type { IssueCategory, UrgencyLevel } from '../../types/case';
-import { Clock, AlertTriangle, HelpCircle, PackageX, Compass, AlertCircle } from 'lucide-react';
+import { Clock, AlertTriangle, HelpCircle, PackageX, Compass, AlertCircle, Zap } from 'lucide-react';
 
 interface IssueCategoryMeta {
   label: string;
@@ -51,6 +51,14 @@ export const ISSUE_CATEGORY_META: Record<IssueCategory, IssueCategoryMeta> = {
     bg: '#F1F5F9',
     color: '#334155',
     border: '#CBD5E1'
+  },
+  EXPEDITE_REQUEST: {
+    label: 'ขอเร่งนำส่ง',
+    shortLabel: 'เร่งนำส่ง',
+    icon: <Zap size={12} />,
+    bg: '#FFF7ED',
+    color: '#C2410C',
+    border: '#FED7AA'
   },
   OTHER: {
     label: 'อื่นๆ / ตีกลับ / แก้จ่าหน้า',

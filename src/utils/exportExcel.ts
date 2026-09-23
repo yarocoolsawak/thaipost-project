@@ -6,9 +6,9 @@ export function exportCasesToExcel(cases: CaseItem[], filenamePrefix = 'ThaiPost
   const headers = [
     'Case ID',
     'หมายเลขพัสดุ (Tracking No)',
-    'บริษัทคู่ค้า',
+    'ร้านค้า (MyOrder)',
     'ผู้แจ้งเรื่อง',
-    'ช่องทางรับเรื่อง',
+    'เลขคำสั่งซื้อ MyOrder',
     'ที่ทำการปลายทาง',
     'กลุ่ม CEC',
     'หมวดปัญหา',
@@ -28,16 +28,16 @@ export function exportCasesToExcel(cases: CaseItem[], filenamePrefix = 'ThaiPost
     const approvedAnswer = c.centralReview?.approvedAnswer || c.cecReply?.answer || '-';
     const isExceeded = c.isSlaExceeded ? 'เกินกำหนด' : 'อยู่ในเกณฑ์';
     const categoryTh = ISSUE_CATEGORY_META[c.category]?.label || c.category;
-    const emailCount = c.emails ? `${c.emails.length} ฉบับ` : '0 ฉบับ';
+    const emailCount = `${c.emails?.length || 0} ฉบับ`;
 
     return [
       c.id,
       c.trackingNumber,
       c.companyName,
       c.contactPerson,
-      c.contactChannel,
+      c.myOrderRef.orderId,
       c.assignedBranchName || c.parcelInfo.destPostOffice,
-      c.assignedCecName || '-',
+      c.assignedCecName || 'รอระบุ CEC',
       categoryTh,
       (c.customerInquiry || '-').replace(/"/g, '""'),
       c.urgency,

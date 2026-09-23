@@ -61,7 +61,7 @@ export const AnalyticsDashboard: React.FC = () => {
             <span className="metric-label">ปริมาณเคสวันนี้ (Daily Volume)</span>
             <span className="metric-value">{totalCasesToday.toLocaleString()}</span>
             <span className="metric-sub" style={{ color: '#059669' }}>
-              ↑ +8.2% จากสัปดาห์ก่อน (50 บริษัทคู่ค้า)
+              ↑ +8.2% จากสัปดาห์ก่อน (ร้านค้า MyOrder)
             </span>
           </div>
           <div className="metric-icon-box" style={{ background: '#EFF6FF', color: '#0284C7' }}>

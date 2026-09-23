@@ -96,7 +96,7 @@ export const BranchEscalationModal: React.FC<BranchEscalationModalProps> = ({
           >
             <div><strong>Case ID:</strong> {caseItem.id}</div>
             <div><strong>เลขพัสดุ:</strong> {caseItem.trackingNumber}</div>
-            <div><strong>บริษัทคู่ค้า:</strong> {caseItem.companyName}</div>
+            <div><strong>ร้านค้า (MyOrder):</strong> {caseItem.companyName}</div>
             <div><strong>ปลายทาง:</strong> {caseItem.parcelInfo.destPostOffice}</div>
           </div>
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { CaseItem } from '../../types/case';
-import { CEC_REGIONS } from '../../data/cecRegions';
+import { CEC_REGIONS, findCecByZipCodeOrProvince } from '../../data/cecRegions';
 import { useCases } from '../../context/CaseContext';
 import { Send, X, MapPin, CheckCircle2 } from 'lucide-react';
 
@@ -11,7 +11,11 @@ interface DispatchCecModalProps {
 
 export const DispatchCecModal: React.FC<DispatchCecModalProps> = ({ caseItem, onClose }) => {
   const { dispatchToCec } = useCases();
-  const [selectedCecId, setSelectedCecId] = useState<number>(caseItem.assignedCecId || 1);
+  // Blank CEC: suggest from the address zip code, but the parcel status has not confirmed it yet
+  const zipSuggestion = findCecByZipCodeOrProvince(caseItem.parcelInfo.destZipCode, caseItem.parcelInfo.destPostOffice);
+  const isBlank = caseItem.assignedCecId === undefined;
+  const isReassign = !isBlank && !['NEW', 'CENTRAL_REVIEWING'].includes(caseItem.status);
+  const [selectedCecId, setSelectedCecId] = useState<number>(caseItem.assignedCecId ?? zipSuggestion?.id ?? 1);
 
   const handleDispatch = () => {
     dispatchToCec(caseItem.id, selectedCecId);
@@ -26,7 +30,13 @@ export const DispatchCecModal: React.FC<DispatchCecModalProps> = ({ caseItem, on
         <div className="modal-header">
           <h2>
             <Send size={20} color="var(--thp-red)" />
-            <span>จ่ายงานเคสไปยังกลุ่ม CEC ประจำพื้นที่ (Route to CEC)</span>
+            <span>
+              {isBlank
+                ? 'ระบุ CEC ผู้รับผิดชอบ (เคสที่ยังว่าง)'
+                : isReassign
+                ? 'ย้ายเคสไปยัง CEC อื่น (Reassign)'
+                : 'จ่ายงานเคสไปยังกลุ่ม CEC ประจำพื้นที่ (Route to CEC)'}
+            </span>
           </h2>
           <button type="button" className="close-btn" onClick={onClose}>
             <X size={20} />
@@ -48,9 +58,17 @@ export const DispatchCecModal: React.FC<DispatchCecModalProps> = ({ caseItem, on
           >
             <div><strong>Case ID:</strong> {caseItem.id} ({caseItem.trackingNumber})</div>
             <div><strong>ปลายทาง:</strong> {caseItem.parcelInfo.destPostOffice} (รหัส {caseItem.parcelInfo.destZipCode})</div>
-            <div style={{ color: '#0284C7' }}>
-              <strong>ระบบแนะนำอัตโนมัติตามรหัสไปรษณีย์:</strong> {caseItem.assignedCecName || 'CEC 1'}
-            </div>
+            <div><strong>สถานะพัสดุล่าสุด:</strong> {caseItem.parcelInfo.currentPostalStatus}</div>
+            {isBlank ? (
+              <div style={{ color: '#C2410C' }}>
+                <strong>ยังระบุ CEC อัตโนมัติไม่ได้</strong> เพราะสถานะพัสดุยังไม่ยืนยันพื้นที่ปลายทาง
+                {zipSuggestion && <> — ตามรหัสไปรษณีย์ในที่อยู่น่าจะเป็น <strong>{zipSuggestion.code}</strong></>}
+              </div>
+            ) : (
+              <div style={{ color: '#0284C7' }}>
+                <strong>CEC ปัจจุบัน:</strong> {caseItem.assignedCecName || `CEC ${caseItem.assignedCecId}`}
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -98,7 +116,7 @@ export const DispatchCecModal: React.FC<DispatchCecModalProps> = ({ caseItem, on
             ยกเลิก
           </button>
           <button type="button" className="btn-primary" onClick={handleDispatch}>
-            <CheckCircle2 size={16} /> ยืนยันจ่ายงานไปยัง {currentCec.code}
+            <CheckCircle2 size={16} /> {isReassign ? 'ย้ายเคสไปยัง' : 'ยืนยันจ่ายงานไปยัง'} {currentCec.code}
           </button>
         </div>
       </div>

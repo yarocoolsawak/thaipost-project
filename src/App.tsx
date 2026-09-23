@@ -1,17 +1,30 @@
 import React, { useState } from 'react';
 import { CaseProvider, useCases } from './context/CaseContext';
+import { MyOrderProvider } from './context/MyOrderContext';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
+import type { AppTab } from './components/layout/Sidebar';
 import { CentralQueue } from './components/central/CentralQueue';
-import { AdminInbox } from './components/admin/AdminInbox';
 import { CecWorkspace } from './components/cec/CecWorkspace';
 import { BranchWorkspace } from './components/branch/BranchWorkspace';
 import { AnalyticsDashboard } from './components/dashboard/AnalyticsDashboard';
+import { MerchantOrders } from './components/myorder/MerchantOrders';
+import { MerchantCaseTracking } from './components/myorder/MerchantCaseTracking';
+import { MyOrderAdminMonitor } from './components/myorder/MyOrderAdminMonitor';
+import { MyOrderEmailLog } from './components/myorder/MyOrderEmailLog';
+import { BulkReportModal } from './components/myorder/BulkReportModal';
 
 const MainContent: React.FC = () => {
   const { role } = useCases();
-  const [currentTab, setCurrentTab] = useState<'CASES' | 'DASHBOARD'>('CASES');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [currentTab, setCurrentTab] = useState<AppTab>('CASES');
+  const [isBulkReportOpen, setIsBulkReportOpen] = useState(false);
+
+  // Each role lands on its own home page
+  const [tabRole, setTabRole] = useState(role);
+  if (tabRole !== role) {
+    setTabRole(role);
+    setCurrentTab(role === 'MERCHANT' ? 'ORDERS' : 'CASES');
+  }
 
   return (
     <div className="app-container">
@@ -24,23 +37,23 @@ const MainContent: React.FC = () => {
         <Sidebar
           currentTab={currentTab}
           setCurrentTab={setCurrentTab}
-          onOpenCreateCase={() => {
-            setCurrentTab('CASES');
-            setIsCreateModalOpen(true);
-          }}
+          onOpenBulkReport={() => setIsBulkReportOpen(true)}
         />
 
         {/* Content Area */}
         <main className="content-area">
-          {currentTab === 'DASHBOARD' ? (
+          {role === 'MERCHANT' ? (
+            currentTab === 'ORDERS' ? <MerchantOrders /> : <MerchantCaseTracking />
+          ) : role === 'MYORDER_ADMIN' ? (
+            currentTab === 'EMAILS' ? (
+              <MyOrderEmailLog />
+            ) : (
+              <MyOrderAdminMonitor onOpenBulkReport={() => setIsBulkReportOpen(true)} />
+            )
+          ) : currentTab === 'DASHBOARD' ? (
             <AnalyticsDashboard />
           ) : role === 'CENTRAL' ? (
             <CentralQueue />
-          ) : role === 'ADMIN' ? (
-            <AdminInbox
-              isCreateModalOpen={isCreateModalOpen}
-              setIsCreateModalOpen={setIsCreateModalOpen}
-            />
           ) : role === 'CEC' ? (
             <CecWorkspace />
           ) : (
@@ -48,6 +61,8 @@ const MainContent: React.FC = () => {
           )}
         </main>
       </div>
+
+      {isBulkReportOpen && role === 'MYORDER_ADMIN' && <BulkReportModal onClose={() => setIsBulkReportOpen(false)} />}
     </div>
   );
 };
@@ -55,7 +70,9 @@ const MainContent: React.FC = () => {
 export function App() {
   return (
     <CaseProvider>
-      <MainContent />
+      <MyOrderProvider>
+        <MainContent />
+      </MyOrderProvider>
     </CaseProvider>
   );
 }

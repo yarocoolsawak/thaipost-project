@@ -5,7 +5,8 @@ import { CEC_REGIONS } from '../../data/cecRegions';
 import { SlaBadge } from '../common/SlaBadge';
 import { CaseDetailModal } from '../common/CaseDetailModal';
 import { IssueDisplay } from '../common/IssueBadge';
-import { Mail,
+import { DuplicateChip, EmailCountChip, OrderRefChip } from '../common/CecAssignment';
+import {
   MapPin,
   Send,
   Eye,
@@ -61,7 +62,7 @@ export const CecWorkspace: React.FC = () => {
               <span>{currentCec.name} (คิวงานศูนย์ประสานงานลูกค้า)</span>
             </h1>
             <p>
-              รับเคสประสานงานจาก ปณ.ส่วนกลาง ตรวจสอบกับที่ทำการไปรษณีย์ปลายทาง และส่งคำตอบกลับเข้า Central Review Queue
+              รับเคสที่ร้านค้าแจ้งผ่าน MyOrder (ส่งตรงถึง CEC หรือ ปณ.ส่วนกลางระบุให้) ตรวจสอบกับที่ทำการไปรษณีย์ปลายทาง และส่งคำตอบกลับเข้า Central Review Queue
             </p>
           </div>
 
@@ -118,7 +119,7 @@ export const CecWorkspace: React.FC = () => {
             <thead>
               <tr>
                 <th>Case ID / เลขพัสดุ</th>
-                <th>บริษัทคู่ค้า</th>
+                <th>ร้านค้า</th>
                 <th>สาขาปลายทาง & ผู้รับ</th>
                 <th>ปัญหา & รายละเอียดคำร้อง</th>
                 <th>สถานะเคส</th>
@@ -140,32 +141,13 @@ export const CecWorkspace: React.FC = () => {
                       <div className="tracking-pill">{item.trackingNumber}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '2px' }}>
                         <span className="case-id-sub">{item.id}</span>
-                        {item.emails && item.emails.length > 0 && (
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.2rem',
-                              fontSize: '0.7rem',
-                              color: '#1D4ED8',
-                              background: '#EFF6FF',
-                              border: '1px solid #BFDBFE',
-                              padding: '0.05rem 0.35rem',
-                              borderRadius: '4px',
-                              fontWeight: 600
-                            }}
-                            title={`มีอีเมลคำร้องทางการ ${item.emails.length} ฉบับ`}
-                          >
-                            <Mail size={10} /> {item.emails.length}
-                          </span>
-                        )}
+                        <EmailCountChip caseItem={item} />
                       </div>
+                      <DuplicateChip caseItem={item} />
                     </td>
                     <td>
                       <div style={{ fontWeight: 600 }}>{item.companyName}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>
-                        {item.contactChannel}
-                      </div>
+                      <OrderRefChip caseItem={item} />
                     </td>
                     <td>
                       <div style={{ fontWeight: 600 }}>{item.parcelInfo.destPostOffice}</div>
@@ -282,7 +264,7 @@ export const CecWorkspace: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label>ข้อความคำตอบที่ส่งกลับไปยัง ปณ.ส่วนกลาง (จะผ่านการ Review ก่อนส่ง Admin):</label>
+                <label>ข้อความคำตอบที่ส่งกลับไปยัง ปณ.ส่วนกลาง (จะผ่านการ Review ก่อนส่งกลับร้านค้า):</label>
                 <textarea
                   className="form-control"
                   rows={4}

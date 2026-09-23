@@ -1,17 +1,18 @@
 export type CaseStatus =
   | 'NEW'
+  | 'PENDING_CEC_ASSIGNMENT'  // ส่งเข้า ปณ. แล้ว แต่ยังระบุ CEC ผู้รับผิดชอบไม่ได้ (รอสถานะพัสดุ)
   | 'CENTRAL_REVIEWING'
   | 'SENT_TO_CEC'
   | 'WAITING_CEC_REPLY'
   | 'CEC_REPLIED'
   | 'WAITING_CENTRAL_REVIEW'
   | 'ANSWER_APPROVED'
-  | 'ANSWER_SENT_TO_ADMIN'
+  | 'ANSWER_SENT_TO_MERCHANT'
   | 'SLA_EXCEEDED'
   | 'CENTRAL_CONTACT_BRANCH'
   | 'CLOSED';
 
-export type UserRole = 'ADMIN' | 'CENTRAL' | 'CEC' | 'BRANCH';
+export type UserRole = 'CENTRAL' | 'CEC' | 'BRANCH' | 'MERCHANT' | 'MYORDER_ADMIN';
 
 export type IssueCategory =
   | 'DELAYED_DELIVERY'       // พัสดุล่าช้าเกินกำหนด
@@ -19,6 +20,7 @@ export type IssueCategory =
   | 'WRONG_BRANCH'           // พัสดุส่งผิดสาขา / ตีกลับผิดพลาด
   | 'DAMAGED_PARCEL'         // พัสดุชำรุดเสียหาย
   | 'CANNOT_LOCATE'          // ค้นหาพัสดุไม่พบในระบบ
+  | 'EXPEDITE_REQUEST'       // ขอเร่งนำส่ง
   | 'OTHER';                 // อื่นๆ
 
 export type UrgencyLevel = 'NORMAL' | 'HIGH' | 'CRITICAL';
@@ -49,7 +51,7 @@ export interface ParcelInfo {
 
 export interface ChatMessage {
   id: string;
-  senderRole: 'CUSTOMER' | 'ADMIN' | 'CENTRAL' | 'CEC' | 'BRANCH' | 'AI_BOT';
+  senderRole: 'CUSTOMER' | 'MYORDER_ADMIN' | 'CENTRAL' | 'CEC' | 'BRANCH';
   senderName: string;
   message: string;
   timestamp: string;
@@ -90,10 +92,15 @@ export interface BranchContactLog {
 export interface CaseItem {
   id: string;                     // e.g. "TP-2026-0042"
   trackingNumber: string;         // e.g. "ED882194821TH"
-  companyName: string;            // e.g. "Shopee Mall Official", "Lazada Co.", "TikTok Partner"
-  contactPerson: string;
-  contactChannel: 'LINE' | 'FACEBOOK' | 'EMAIL' | 'PORTAL';
-  channelReference?: string;      // e.g. "LINE Group: Shopee VIP (Group #4)"
+  companyName: string;            // MyOrder shop name, e.g. "Healthy Snack by Nok"
+  contactPerson: string;          // shop owner / staff who reported the problem
+
+  // Every case is raised by a shop from its MyOrder order
+  myOrderRef: {
+    orderId: string;
+    shopId: string;
+    shopName: string;
+  };
   
   category: IssueCategory;
   urgency: UrgencyLevel;
@@ -101,7 +108,7 @@ export interface CaseItem {
   
   status: CaseStatus;
   
-  assignedCecId?: number;         // 1 - 14
+  assignedCecId?: number;         // 1 - 14 (blank until destination CEC can be determined)
   assignedCecName?: string;
   assignedBranchName?: string;
   
@@ -131,12 +138,17 @@ export interface CaseItem {
   chatHistory: ChatMessage[];
   activityLogs: ActivityLog[];
   parcelInfo: ParcelInfo;
-  emails?: OfficialEmailRecord[];
+  emails?: OfficialEmailRecord[];     // official request emails the shop sent to ThaiPost
   
   // Duplicate detection link
   duplicateOfCaseId?: string;
   linkedDuplicateCaseIds?: string[];
 }
+
+export type EmailRequestType = 'RETURN_PARCEL' | 'CHANGE_ADDRESS' | 'SUBMIT_DOCS';
+
+// Who on the MyOrder side sent / reported something (the shop itself or MyOrder admin on its behalf)
+export type MyOrderActorRole = 'MERCHANT' | 'MYORDER_ADMIN';
 
 export interface OfficialEmailRecord {
   id: string;
@@ -145,18 +157,19 @@ export interface OfficialEmailRecord {
   to: string;
   cc?: string;
   subject: string;
-  requestType: 'RETURN_PARCEL' | 'CHANGE_ADDRESS' | 'SUBMIT_DOCS';
+  requestType: EmailRequestType;
   body: string;
   attachments: string[];
+  sentByRole?: MyOrderActorRole;     // defaults to MERCHANT
 }
 
 export interface EmailPayload {
   to: string;
   cc?: string;
   subject: string;
-  requestType: 'RETURN_PARCEL' | 'CHANGE_ADDRESS' | 'SUBMIT_DOCS';
+  requestType: EmailRequestType;
   body: string;
   attachments: string[];
   senderName: string;
+  sentByRole?: MyOrderActorRole;
 }
-

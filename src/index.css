@@ -82,7 +82,8 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
 }
 
 .brand-section {
@@ -598,6 +599,12 @@ button, input, select, textarea {
   border: 1px solid #BFDBFE;
 }
 
+.status-badge.PENDING_CEC_ASSIGNMENT {
+  background: #FFF7ED;
+  color: #C2410C;
+  border: 1px dashed #FDBA74;
+}
+
 .status-badge.CENTRAL_REVIEWING {
   background: #F5F3FF;
   color: #6D28D9;
@@ -625,7 +632,7 @@ button, input, select, textarea {
   border: 1px solid #A7F3D0;
 }
 
-.status-badge.ANSWER_SENT_TO_ADMIN {
+.status-badge.ANSWER_SENT_TO_MERCHANT {
   background: #ECFDF5;
   color: #065F46;
   border: 1px solid #6EE7B7;
@@ -1063,4 +1070,274 @@ button, input, select, textarea {
   .sidebar-panel {
     width: 100%;
   }
+}
+
+/* ---------- Role switcher groups (ThaiPost / MyOrder) ---------- */
+.role-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 6px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.role-group-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #5EEAD4;
+  padding: 0 0.35rem 0 0.2rem;
+}
+
+.role-pill.myorder.active {
+  background: var(--myorder-teal);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
+}
+
+:root {
+  --myorder-teal: #0D9488;
+  --myorder-teal-dark: #115E59;
+  --myorder-teal-light: #F0FDFA;
+  --myorder-teal-border: #99F6E4;
+}
+
+/* ---------- CEC assignment cell ---------- */
+.cec-blank-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #C2410C;
+  background: #FFF7ED;
+  border: 1px dashed #FDBA74;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+}
+
+.source-chip {
+  display: inline-flex;
+  white-space: nowrap;
+  margin-top: 2px;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  color: var(--myorder-teal-dark);
+  background: var(--myorder-teal-light);
+  border: 1px solid var(--myorder-teal-border);
+}
+
+/* ---------- MyOrder pages ---------- */
+.myorder-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, var(--myorder-teal-light) 0%, #ECFEFF 100%);
+  border: 1px solid var(--myorder-teal-border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.8rem;
+  color: var(--myorder-teal-dark);
+}
+
+.myorder-banner strong {
+  font-weight: 700;
+}
+
+.btn-myorder {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--myorder-teal);
+  color: #FFFFFF;
+  border: none;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-myorder:hover {
+  background: var(--myorder-teal-dark);
+}
+
+.btn-myorder:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.order-status-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* Merchant-facing progress stepper */
+.progress-stepper {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  width: 100%;
+}
+
+.progress-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  min-width: 0;
+}
+
+.progress-step::before {
+  content: '';
+  position: absolute;
+  top: 13px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: #E2E8F0;
+  z-index: 0;
+}
+
+.progress-step:first-child::before {
+  display: none;
+}
+
+.progress-step.done::before,
+.progress-step.current::before {
+  background: var(--myorder-teal);
+}
+
+.progress-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  border: 2px solid #CBD5E1;
+  color: #94A3B8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  position: relative;
+  z-index: 1;
+}
+
+.progress-step.done .progress-dot {
+  background: var(--myorder-teal);
+  border-color: var(--myorder-teal);
+  color: #FFFFFF;
+}
+
+.progress-step.current .progress-dot {
+  border-color: var(--myorder-teal);
+  color: var(--myorder-teal);
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15);
+}
+
+.progress-step.waiting .progress-dot {
+  border-style: dashed;
+  border-color: #FDBA74;
+  color: #C2410C;
+  background: #FFF7ED;
+}
+
+.progress-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--thp-slate);
+  margin-top: 0.35rem;
+  line-height: 1.25;
+  padding: 0 0.2rem;
+}
+
+.progress-step.pending .progress-label {
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.progress-sub {
+  font-size: 0.66rem;
+  color: var(--thp-muted);
+  margin-top: 1px;
+}
+
+.merchant-case-card {
+  background: var(--thp-card);
+  border: 1px solid var(--thp-border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.merchant-case-card:hover {
+  border-color: var(--myorder-teal-border);
+}
+
+@media (max-width: 640px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .progress-label {
+    font-size: 0.64rem;
+  }
+}
+
+/* Bulk report: inputs | live preview */
+.bulk-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 1rem;
+}
+
+@media (max-width: 860px) {
+  .bulk-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Follow existing case / create new toggle (bulk report) */
+.dup-toggle {
+  display: inline-flex;
+  border: 1px solid #FCD34D;
+  border-radius: 6px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.dup-toggle button {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+  border: none;
+  background: #FFFFFF;
+  color: #92400E;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.dup-toggle button + button {
+  border-left: 1px solid #FCD34D;
+}
+
+.dup-toggle button.active {
+  background: #F59E0B;
+  color: #FFFFFF;
+  font-weight: 700;
 }

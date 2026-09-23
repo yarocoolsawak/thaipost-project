@@ -90,7 +90,7 @@ export const BranchWorkspace: React.FC = () => {
             <thead>
               <tr>
                 <th>Case ID / เลขพัสดุ</th>
-                <th>บริษัทคู่ค้า</th>
+                <th>ร้านค้า (MyOrder)</th>
                 <th>ผู้รับปลายทาง</th>
                 <th>ปัญหา & คำร้อง</th>
                 <th>สถานะการประสานงาน</th>

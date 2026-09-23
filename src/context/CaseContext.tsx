@@ -1,26 +1,23 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { CaseItem, UserRole, IssueCategory, UrgencyLevel, BranchContactLog, ActivityLog, ChatMessage, EmailPayload, OfficialEmailRecord } from '../types/case';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import type { CaseItem, UserRole, IssueCategory, UrgencyLevel, BranchContactLog, ActivityLog, ChatMessage, EmailPayload, OfficialEmailRecord, MyOrderActorRole } from '../types/case';
+import { EMAIL_REQUEST_TYPE_LABEL } from '../utils/emailTemplates';
 import { INITIAL_CASES } from '../data/mockCases';
-import { getCecByZipCodeOrProvince } from '../data/cecRegions';
-import { fetchThaiPostTrackAndTrace } from '../services/trackTraceApi';
+import { CEC_REGIONS, resolveCecFromParcel } from '../data/cecRegions';
+import { fetchThaiPostTrackAndTrace, fetchTrackingUpdate } from '../services/trackTraceApi';
+
+export type TrackingSyncResult = 'NO_CHANGE' | 'UPDATED' | 'CEC_ASSIGNED';
 
 interface CreateCaseParams {
   trackingNumber: string;
-  companyName: string;
   contactPerson: string;
-  contactChannel: 'LINE' | 'FACEBOOK' | 'EMAIL' | 'PORTAL';
-  channelReference?: string;
+  myOrderRef: CaseItem['myOrderRef'];
+  attachments?: string[];
   category: IssueCategory;
   urgency: UrgencyLevel;
   customerInquiry: string;
-  emailDispatch?: {
-    to: string;
-    cc?: string;
-    subject: string;
-    requestType: 'RETURN_PARCEL' | 'CHANGE_ADDRESS' | 'SUBMIT_DOCS';
-    body: string;
-    attachments: string[];
-  };
+  emailDispatch?: Omit<EmailPayload, 'senderName'>; // optional official request email sent together with the report
+  reportedBy?: { role: MyOrderActorRole; name: string }; // defaults to the shop contact itself
+  duplicateOfCaseId?: string; // reporter chose to open a new case although this open case exists for the parcel
 }
 
 interface CaseContextType {
@@ -46,8 +43,9 @@ interface CaseContextType {
   // Actions
   createCase: (params: CreateCaseParams) => Promise<CaseItem>;
   checkDuplicate: (trackingNumber: string) => CaseItem | undefined;
-  linkToExistingCase: (existingCaseId: string, newMessage: string, senderName: string) => void;
+  linkToExistingCase: (existingCaseId: string, newMessage: string, senderName: string, actorRole?: MyOrderActorRole) => void;
   dispatchToCec: (caseId: string, cecId: number) => void;
+  syncParcelTracking: (caseId: string) => Promise<TrackingSyncResult>;
   cecSubmitReply: (caseId: string, answer: string, branchNotes?: string, replierName?: string) => void;
   centralReviewAnswer: (
     caseId: string,
@@ -64,6 +62,7 @@ interface CaseContextType {
   counts: {
     total: number;
     newCases: number;
+    pendingCec: number;
     waitingCec: number;
     waitingReview: number;
     slaExceeded: number;
@@ -74,8 +73,46 @@ interface CaseContextType {
 
 const CaseContext = createContext<CaseContextType | undefined>(undefined);
 
+// Chat + audit entries recorded whenever a shop sends an official request email
+const buildEmailEntries = (payload: EmailPayload, nowIso: string, idSeed: number) => {
+  const record: OfficialEmailRecord = {
+    id: `email-${idSeed}`,
+    sentAt: nowIso,
+    senderName: payload.senderName,
+    to: payload.to,
+    cc: payload.cc,
+    subject: payload.subject,
+    requestType: payload.requestType,
+    body: payload.body,
+    attachments: payload.attachments,
+    sentByRole: payload.sentByRole || 'MERCHANT'
+  };
+  const byAdmin = payload.sentByRole === 'MYORDER_ADMIN';
+  const chat: ChatMessage = {
+    id: `msg-${idSeed}`,
+    senderRole: byAdmin ? 'MYORDER_ADMIN' : 'CUSTOMER',
+    senderName: `${payload.senderName} (ส่งอีเมลทางการ)`,
+    message: `[ส่งอีเมลถึง ${payload.to} | เรื่อง: ${payload.subject}]\nประเภทคำร้อง: ${EMAIL_REQUEST_TYPE_LABEL[payload.requestType]}\n\nรายละเอียด:\n${payload.body}${
+      payload.attachments.length > 0
+        ? `\n\n📎 เอกสารแนบ (${payload.attachments.length} ไฟล์):\n- ${payload.attachments.join('\n- ')}`
+        : ''
+    }`,
+    timestamp: nowIso,
+    attachments: payload.attachments
+  };
+  const log: ActivityLog = {
+    id: `log-${idSeed}`,
+    timestamp: nowIso,
+    actorName: byAdmin ? payload.senderName : `${payload.senderName} (MyOrder)`,
+    actorRole: byAdmin ? 'MYORDER_ADMIN' : 'MERCHANT',
+    action: byAdmin ? 'แอดมิน MyOrder ส่งอีเมลคำร้องแทนร้านค้า' : 'ส่งอีเมลคำร้องทางการ (Email Sent)',
+    details: `${EMAIL_REQUEST_TYPE_LABEL[payload.requestType]} • ส่งถึง: ${payload.to} | ${payload.subject} (แนบ ${payload.attachments.length} ไฟล์)`
+  };
+  return { record, chat, log };
+};
+
 export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [role, setRole] = useState<UserRole>('CENTRAL');
+  const [role, setRoleState] = useState<UserRole>('CENTRAL');
   const [selectedCecId, setSelectedCecId] = useState<number>(1);
   const [selectedBranchName, setSelectedBranchName] = useState<string>('ปณ.สันกำแพง (เชียงใหม่)');
   
@@ -84,6 +121,15 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [selectedCase, setSelectedCase] = useState<CaseItem | null>(null);
+  // Running case number so several cases created at once (bulk report) never share an ID
+  const caseSeq = useRef(INITIAL_CASES.length);
+
+  // Switching role starts from clean filters (each role has its own queue/tabs)
+  const setRole = (next: UserRole) => {
+    setRoleState(next);
+    setStatusFilter('ALL');
+    setCategoryFilter('ALL');
+  };
 
   // Check SLA violations every 30 seconds
   useEffect(() => {
@@ -128,121 +174,157 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return cases.find(c => c.trackingNumber.toUpperCase() === clean && c.status !== 'CLOSED');
   };
 
-  // Create Case
+  // Create Case (a shop reports a problem on a shipped MyOrder order)
   const createCase = async (params: CreateCaseParams): Promise<CaseItem> => {
     const cleanTracking = params.trackingNumber.trim().toUpperCase();
     const parcelInfo = await fetchThaiPostTrackAndTrace(cleanTracking);
-    const assignedCec = getCecByZipCodeOrProvince(parcelInfo.destZipCode, parcelInfo.destPostOffice);
-    
+    // Route straight to CEC when the destination is confirmed; otherwise leave CEC blank for now
+    const assignedCec = resolveCecFromParcel(parcelInfo);
+    const shopName = params.myOrderRef.shopName;
+
     const now = new Date();
     const nowIso = now.toISOString();
     const slaDeadlineIso = new Date(now.getTime() + 72 * 3600 * 1000).toISOString(); // 3 days SLA
 
-    const caseCount = cases.length + 1;
-    const newId = `TP-2026-${caseCount.toString().padStart(4, '0')}`;
+    caseSeq.current += 1;
+    const newId = `TP-2026-${caseSeq.current.toString().padStart(4, '0')}`;
+    const reporter = params.reportedBy || { role: 'MERCHANT' as const, name: params.contactPerson };
+    const byAdmin = reporter.role === 'MYORDER_ADMIN';
 
-    const emails: OfficialEmailRecord[] = [];
     const chatHistory: ChatMessage[] = [
       {
         id: `msg-${Date.now()}`,
-        senderRole: 'CUSTOMER',
-        senderName: `${params.contactPerson} (${params.companyName})`,
+        senderRole: byAdmin ? 'MYORDER_ADMIN' : 'CUSTOMER',
+        senderName: byAdmin ? `${reporter.name} (แจ้งแทน ${shopName})` : `${params.contactPerson} (${shopName})`,
         message: params.customerInquiry,
-        timestamp: nowIso
+        timestamp: nowIso,
+        attachments: params.attachments?.length ? params.attachments : undefined
       }
     ];
     const activityLogs: ActivityLog[] = [
+      assignedCec
+        ? {
+            id: `log-${Date.now() + 3}`,
+            timestamp: nowIso,
+            actorName: 'ระบบ (Auto-Routing)',
+            actorRole: 'CENTRAL',
+            action: 'ส่งเคสตรงถึง CEC อัตโนมัติ',
+            details: `ระบุ ${assignedCec.code} จากรหัสไปรษณีย์ปลายทาง ${parcelInfo.destZipCode} และส่งเข้าคิว CEC ทันที`
+          }
+        : {
+            id: `log-${Date.now() + 3}`,
+            timestamp: nowIso,
+            actorName: 'ระบบ (Auto-Routing)',
+            actorRole: 'CENTRAL',
+            action: 'รอระบุ CEC ผู้รับผิดชอบ',
+            details: `สถานะพัสดุล่าสุด "${parcelInfo.currentPostalStatus}" ยังยืนยันพื้นที่ปลายทางไม่ได้ ระบบจะระบุ CEC อัตโนมัติเมื่อสถานะพัสดุอัปเดต`
+          },
       {
         id: `log-${Date.now()}`,
         timestamp: nowIso,
-        actorName: `Admin (${params.companyName})`,
-        actorRole: 'ADMIN',
-        action: 'สร้างเคสในระบบ',
-        details: `รับเรื่องติดตามพัสดุ ${cleanTracking} ผ่านช่องทาง ${params.contactChannel} ดึงข้อมูล Track & Trace ปณท สำเร็จ`
+        actorName: byAdmin ? reporter.name : `${params.contactPerson} (MyOrder)`,
+        actorRole: reporter.role,
+        action: byAdmin ? 'แอดมิน MyOrder แจ้งปัญหาแทนร้านค้า' : 'ร้านค้าแจ้งปัญหาผ่าน MyOrder',
+        details: `แจ้งปัญหาจากคำสั่งซื้อ ${params.myOrderRef.orderId} (${cleanTracking}) ของร้าน ${shopName} ส่งตรงเข้าระบบ ปณ.`
       }
     ];
 
+    if (params.duplicateOfCaseId) {
+      activityLogs.splice(1, 0, {
+        id: `log-${Date.now() + 4}`,
+        timestamp: nowIso,
+        actorName: byAdmin ? reporter.name : `${params.contactPerson} (MyOrder)`,
+        actorRole: reporter.role,
+        action: 'เปิดเคสใหม่ทั้งที่มีเคสเดิมยังไม่ปิด',
+        details: `ผู้แจ้งยืนยันสร้างเคสใหม่ แม้เลขพัสดุนี้มีเคส ${params.duplicateOfCaseId} ที่ยังเปิดอยู่`
+      });
+    }
+
+    const emails: OfficialEmailRecord[] = [];
     if (params.emailDispatch) {
-      const emailRecord: OfficialEmailRecord = {
-        id: `email-${Date.now()}`,
-        sentAt: nowIso,
-        senderName: params.contactPerson,
-        to: params.emailDispatch.to,
-        cc: params.emailDispatch.cc,
-        subject: params.emailDispatch.subject,
-        requestType: params.emailDispatch.requestType,
-        body: params.emailDispatch.body,
-        attachments: params.emailDispatch.attachments
-      };
-      emails.push(emailRecord);
-
-      chatHistory.push({
-        id: `msg-${Date.now() + 1}`,
-        senderRole: 'ADMIN',
-        senderName: `${params.contactPerson} (ส่งอีเมลทางการพร้อมสร้างเคส)`,
-        message: `[ส่งอีเมลถึง ${emailRecord.to} | เรื่อง: ${emailRecord.subject}]\n\n${emailRecord.body}${
-          emailRecord.attachments.length > 0 ? `\n\n📎 เอกสารแนบ (${emailRecord.attachments.length} ไฟล์):\n- ${emailRecord.attachments.join('\n- ')}` : ''
-        }`,
-        timestamp: nowIso,
-        attachments: emailRecord.attachments
-      });
-
-      activityLogs.unshift({
-        id: `log-${Date.now() + 2}`,
-        timestamp: nowIso,
-        actorName: `Admin (${params.companyName})`,
-        actorRole: 'ADMIN',
-        action: 'สร้างเคสพร้อมส่งอีเมลคำร้องทางการ',
-        details: `ส่งอีเมลถึง: ${emailRecord.to} เรื่อง: ${emailRecord.subject} (แนบ ${emailRecord.attachments.length} ไฟล์)`
-      });
+      const { record, chat, log } = buildEmailEntries(
+        { ...params.emailDispatch, senderName: byAdmin ? reporter.name : params.contactPerson, sentByRole: reporter.role },
+        nowIso,
+        Date.now() + 5
+      );
+      emails.push(record);
+      chatHistory.push(chat);
+      activityLogs.splice(1, 0, log); // after the routing entry, before the report entry
     }
 
     const newCase: CaseItem = {
       id: newId,
       trackingNumber: cleanTracking,
-      companyName: params.companyName,
+      companyName: shopName,
       contactPerson: params.contactPerson,
-      contactChannel: params.contactChannel,
-      channelReference: params.channelReference,
+      myOrderRef: params.myOrderRef,
       category: params.category,
       urgency: params.urgency,
       customerInquiry: params.customerInquiry,
-      status: 'NEW',
-      assignedCecId: assignedCec.id,
-      assignedCecName: assignedCec.name,
+      status: assignedCec ? 'WAITING_CEC_REPLY' : 'PENDING_CEC_ASSIGNMENT',
+      assignedCecId: assignedCec?.id,
+      assignedCecName: assignedCec?.name,
       assignedBranchName: parcelInfo.destPostOffice,
       createdAt: nowIso,
+      dispatchedAt: assignedCec ? nowIso : undefined,
       slaDeadline: slaDeadlineIso,
       isSlaExceeded: false,
       branchContactLogs: [],
       chatHistory,
       activityLogs,
       emails,
-      parcelInfo
+      parcelInfo,
+      duplicateOfCaseId: params.duplicateOfCaseId
     };
 
-    setCases(prev => [newCase, ...prev]);
+    setCases(prev => [
+      newCase,
+      ...prev.map(c =>
+        c.id !== params.duplicateOfCaseId
+          ? c
+          : {
+              ...c,
+              linkedDuplicateCaseIds: [...(c.linkedDuplicateCaseIds || []), newId],
+              activityLogs: [
+                {
+                  id: `log-${Date.now() + 6}`,
+                  timestamp: nowIso,
+                  actorName: 'ระบบ (Duplicate Check)',
+                  actorRole: 'CENTRAL' as const,
+                  action: 'มีการเปิดเคสใหม่ของพัสดุเดียวกัน',
+                  details: `เปิดเคส ${newId} สำหรับเลขพัสดุ ${cleanTracking} ขณะที่เคสนี้ยังไม่ปิด`
+                },
+                ...c.activityLogs
+              ]
+            }
+      )
+    ]);
     return newCase;
   };
 
   // Link to existing case (instead of creating duplicate)
-  const linkToExistingCase = (existingCaseId: string, newMessage: string, senderName: string) => {
+  const linkToExistingCase = (
+    existingCaseId: string,
+    newMessage: string,
+    senderName: string,
+    actorRole: MyOrderActorRole = 'MERCHANT'
+  ) => {
     const nowIso = new Date().toISOString();
     setCases(prev =>
       prev.map(c => {
         if (c.id !== existingCaseId) return c;
         const newChat: ChatMessage = {
           id: `msg-${Date.now()}`,
-          senderRole: 'CUSTOMER',
-          senderName: senderName || 'ลูกค้า/แอดมิน (ถามซ้ำ)',
+          senderRole: actorRole === 'MYORDER_ADMIN' ? 'MYORDER_ADMIN' : 'CUSTOMER',
+          senderName: senderName || 'ร้านค้า (ถามซ้ำ)',
           message: `[สอบถามเพิ่มเติมเกี่ยวกับเลขพัสดุเดิม]: ${newMessage}`,
           timestamp: nowIso
         };
         const newLog: ActivityLog = {
           id: `log-${Date.now()}`,
           timestamp: nowIso,
-          actorName: senderName || 'Admin',
-          actorRole: 'ADMIN',
+          actorName: senderName || 'ร้านค้า',
+          actorRole,
           action: 'แนบคำถามเข้าเคสเดิม (Duplicate Prevented)',
           details: `ตรวจพบการสอบถามซ้ำ ระบบผูกเข้า Timeline เดิมของ Case ID: ${existingCaseId}`
         };
@@ -255,16 +337,21 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // Central dispatches to CEC
+  // Central assigns / reassigns a CEC (also used to fill in a blank CEC manually)
   const dispatchToCec = (caseId: string, cecId: number) => {
     const nowIso = new Date().toISOString();
+    const cec = CEC_REGIONS.find(r => r.id === cecId);
     setCases(prev =>
       prev.map(c => {
         if (c.id !== caseId) return c;
+        const isReassign = c.assignedCecId !== undefined && c.assignedCecId !== cecId;
+        // Keep later-stage statuses (e.g. SLA exceeded / waiting review) when only swapping the CEC
+        const keepStatus = isReassign && !['NEW', 'CENTRAL_REVIEWING', 'PENDING_CEC_ASSIGNMENT'].includes(c.status);
         return {
           ...c,
-          status: 'WAITING_CEC_REPLY',
+          status: keepStatus ? c.status : 'WAITING_CEC_REPLY',
           assignedCecId: cecId,
+          assignedCecName: cec?.name,
           dispatchedAt: c.dispatchedAt || nowIso,
           activityLogs: [
             {
@@ -272,14 +359,69 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
               timestamp: nowIso,
               actorName: 'เจ้าหน้าที่ ปณ.ส่วนกลาง',
               actorRole: 'CENTRAL',
-              action: 'ส่งเคสไปยัง CEC',
-              details: `ส่งเคสไปยัง CEC ${cecId} ประจำพื้นที่สาขาปลายทาง เพื่อตรวจสอบและประสานงาน`
+              action: isReassign ? 'เปลี่ยน CEC ผู้รับผิดชอบ' : 'ระบุ CEC และส่งเคส',
+              details: isReassign
+                ? `ย้ายเคสจาก CEC ${c.assignedCecId} ไปยัง ${cec?.code || `CEC ${cecId}`}`
+                : `ส่งเคสไปยัง ${cec?.code || `CEC ${cecId}`} ประจำพื้นที่สาขาปลายทาง เพื่อตรวจสอบและประสานงาน`
             },
             ...c.activityLogs
           ]
         };
       })
     );
+  };
+
+  // Pull the latest Track & Trace status; fill in the CEC once the destination becomes known
+  const syncParcelTracking = async (caseId: string): Promise<TrackingSyncResult> => {
+    const target = cases.find(c => c.id === caseId);
+    if (!target) return 'NO_CHANGE';
+
+    const updatedParcel = await fetchTrackingUpdate(target.parcelInfo);
+    if (updatedParcel === target.parcelInfo) return 'NO_CHANGE';
+
+    const cec = target.assignedCecId === undefined ? resolveCecFromParcel(updatedParcel) : undefined;
+    const nowIso = new Date().toISOString();
+    const latestEvent = updatedParcel.events[updatedParcel.events.length - 1];
+
+    setCases(prev =>
+      prev.map(c => {
+        if (c.id !== caseId) return c;
+        const logs: ActivityLog[] = [
+          {
+            id: `log-${Date.now()}`,
+            timestamp: nowIso,
+            actorName: 'ระบบ (Track & Trace API)',
+            actorRole: 'CENTRAL',
+            action: 'อัปเดตสถานะพัสดุ',
+            details: `${latestEvent.status} @ ${latestEvent.location}: ${latestEvent.description}`
+          }
+        ];
+        if (cec) {
+          logs.unshift({
+            id: `log-${Date.now() + 1}`,
+            timestamp: nowIso,
+            actorName: 'ระบบ (Auto-Routing)',
+            actorRole: 'CENTRAL',
+            action: 'ระบุ CEC อัตโนมัติและส่งเคส',
+            details: `ยืนยันพื้นที่ปลายทางแล้ว ระบุ ${cec.code} จากรหัสไปรษณีย์ ${updatedParcel.destZipCode} และส่งเข้าคิว CEC`
+          });
+        }
+        return {
+          ...c,
+          parcelInfo: updatedParcel,
+          ...(cec
+            ? {
+                assignedCecId: cec.id,
+                assignedCecName: cec.name,
+                dispatchedAt: c.dispatchedAt || nowIso,
+                status: c.status === 'PENDING_CEC_ASSIGNMENT' ? 'WAITING_CEC_REPLY' : c.status
+              }
+            : {}),
+          activityLogs: [...logs, ...c.activityLogs]
+        };
+      })
+    );
+    return cec ? 'CEC_ASSIGNED' : 'UPDATED';
   };
 
   // CEC submits reply
@@ -364,10 +506,10 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         }
 
-        // APPROVED or EDITED -> transitions to ANSWER_SENT_TO_ADMIN
+        // APPROVED or EDITED -> transitions to ANSWER_SENT_TO_MERCHANT
         return {
           ...c,
-          status: 'ANSWER_SENT_TO_ADMIN',
+          status: 'ANSWER_SENT_TO_MERCHANT',
           centralReview: {
             reviewedAt: nowIso,
             reviewedBy: 'ปณ.ส่วนกลาง',
@@ -391,8 +533,8 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
               timestamp: nowIso,
               actorName: 'ปณ.ส่วนกลาง',
               actorRole: 'CENTRAL',
-              action: action === 'APPROVED' ? 'อนุมัติคำตอบและส่งให้ Admin' : 'ปรับแก้คำตอบและส่งให้ Admin',
-              details: `คำตอบผ่านการตรวจสอบคุณภาพและส่งมอบให้ Admin บริษัท ${c.companyName} แล้ว`
+              action: action === 'APPROVED' ? 'อนุมัติคำตอบและส่งให้ร้านค้า' : 'ปรับแก้คำตอบและส่งให้ร้านค้า',
+              details: `คำตอบผ่านการตรวจสอบคุณภาพและส่งกลับร้าน ${c.companyName} ผ่าน MyOrder แล้ว`
             },
             ...c.activityLogs
           ]
@@ -450,7 +592,12 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
             {
               id: `log-${Date.now()}`,
               timestamp: nowIso,
-              actorName: role === 'CENTRAL' ? 'ปณ.ส่วนกลาง' : 'Admin',
+              actorName:
+                role === 'MERCHANT'
+                  ? `ร้านค้า (${c.companyName})`
+                  : role === 'MYORDER_ADMIN'
+                  ? 'แอดมิน MyOrder'
+                  : 'ปณ.ส่วนกลาง',
               actorRole: role,
               action: 'ปิดเคส (CLOSED)',
               details: `ปิดเคสสมบูรณ์: ${resolutionNotes}`
@@ -476,7 +623,16 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (c.id !== caseId) return c;
         const newMsg: ChatMessage = {
           id: `msg-${Date.now()}`,
-          senderRole: senderRole === 'ADMIN' ? 'ADMIN' : senderRole === 'CENTRAL' ? 'CENTRAL' : senderRole === 'CEC' ? 'CEC' : 'BRANCH',
+          senderRole:
+            senderRole === 'MERCHANT'
+              ? 'CUSTOMER'
+              : senderRole === 'MYORDER_ADMIN'
+              ? 'MYORDER_ADMIN'
+              : senderRole === 'CENTRAL'
+              ? 'CENTRAL'
+              : senderRole === 'CEC'
+              ? 'CEC'
+              : 'BRANCH',
           senderName,
           message,
           timestamp: nowIso,
@@ -490,60 +646,19 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // Send Official Email (Admin requesting return / address change with attachments)
+  // Shop sends an official request email (return parcel / change address / submit evidence)
   const sendOfficialEmail = (caseId: string, payload: EmailPayload) => {
     const nowIso = new Date().toISOString();
-    const typeLabel =
-      payload.requestType === 'RETURN_PARCEL'
-        ? 'ขอระงับการจ่ายและตีกลับต้นทาง'
-        : payload.requestType === 'CHANGE_ADDRESS'
-        ? 'ขอแก้ไขจ่าหน้า/ที่อยู่ผู้รับใหม่'
-        : 'ส่งเอกสารหลักฐานประกอบคำร้อง';
-
+    const { record, chat, log } = buildEmailEntries(payload, nowIso, Date.now());
     setCases(prev =>
       prev.map(c => {
         if (c.id !== caseId) return c;
-
-        const emailMsg: ChatMessage = {
-          id: `msg-${Date.now()}`,
-          senderRole: 'ADMIN',
-          senderName: `${payload.senderName} (ส่งอีเมลทางการ)`,
-          message: `[ส่งอีเมลถึง ${payload.to} | เรื่อง: ${payload.subject}]\nประเภทคำร้อง: ${typeLabel}\n\nรายละเอียด:\n${payload.body}${
-            payload.attachments.length > 0
-              ? `\n\n📎 เอกสารแนบ (${payload.attachments.length} ไฟล์):\n- ${payload.attachments.join('\n- ')}`
-              : ''
-          }`,
-          timestamp: nowIso,
-          attachments: payload.attachments
-        };
-
-        const newLog: ActivityLog = {
-          id: `log-${Date.now()}`,
-          timestamp: nowIso,
-          actorName: payload.senderName || 'Admin',
-          actorRole: 'ADMIN',
-          action: 'ส่งอีเมลคำร้องทางการ (Email Sent)',
-          details: `ส่งถึง: ${payload.to} | ${payload.subject} (แนบ ${payload.attachments.length} ไฟล์)`
-        };
-
-        const emailRecord: OfficialEmailRecord = {
-          id: `email-${Date.now()}`,
-          sentAt: nowIso,
-          senderName: payload.senderName,
-          to: payload.to,
-          cc: payload.cc,
-          subject: payload.subject,
-          requestType: payload.requestType,
-          body: payload.body,
-          attachments: payload.attachments
-        };
-
         return {
           ...c,
           category: payload.requestType === 'RETURN_PARCEL' ? 'WRONG_BRANCH' : c.category,
-          emails: [emailRecord, ...(c.emails || [])],
-          chatHistory: [...c.chatHistory, emailMsg],
-          activityLogs: [newLog, ...c.activityLogs]
+          emails: [record, ...(c.emails || [])],
+          chatHistory: [...c.chatHistory, chat],
+          activityLogs: [log, ...c.activityLogs]
         };
       })
     );
@@ -552,6 +667,7 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Filtered cases based on role and active search/status filters
   const filteredCases = cases.filter(c => {
     // Role based scoping
+    // (MERCHANT is scoped per shop inside its own views; MYORDER_ADMIN and CENTRAL see every case)
     if (role === 'CEC') {
       if (c.assignedCecId !== selectedCecId) return false;
     } else if (role === 'BRANCH') {
@@ -590,6 +706,7 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const counts = {
     total: cases.length,
     newCases: cases.filter(c => c.status === 'NEW').length,
+    pendingCec: cases.filter(c => c.status === 'PENDING_CEC_ASSIGNMENT').length,
     waitingCec: cases.filter(c => c.status === 'WAITING_CEC_REPLY' || c.status === 'SENT_TO_CEC').length,
     waitingReview: cases.filter(c => c.status === 'WAITING_CENTRAL_REVIEW').length,
     slaExceeded: cases.filter(c => c.status === 'SLA_EXCEEDED').length,
@@ -620,6 +737,7 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
         checkDuplicate,
         linkToExistingCase,
         dispatchToCec,
+        syncParcelTracking,
         cecSubmitReply,
         centralReviewAnswer,
         escalateToBranch,
