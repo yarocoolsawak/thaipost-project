@@ -1,0 +1,60 @@
+export interface PartnerCompany {
+  id: string;
+  name: string;
+  category: 'E-COMMERCE' | 'RETAIL' | 'FINANCE' | 'ELECTRONICS' | 'LOGISTICS_PARTNER';
+  lineGroup: string;
+  contactEmail: string;
+}
+
+export const PARTNER_COMPANIES: PartnerCompany[] = [
+  { id: 'COM-01', name: 'Shopee Official Mall', category: 'E-COMMERCE', lineGroup: 'LINE_THP_Shopee_VIP1', contactEmail: 'ops@shopee.co.th' },
+  { id: 'COM-02', name: 'Lazada Express Thailand', category: 'E-COMMERCE', lineGroup: 'LINE_THP_Lazada_Direct', contactEmail: 'lex-th@lazada.com' },
+  { id: 'COM-03', name: 'TikTok Shop Official TH', category: 'E-COMMERCE', lineGroup: 'LINE_THP_TikTok_Ops', contactEmail: 'support-th@tiktok.com' },
+  { id: 'COM-04', name: 'Central Online Direct', category: 'RETAIL', lineGroup: 'LINE_THP_Central_Logistics', contactEmail: 'cs@central.co.th' },
+  { id: 'COM-05', name: 'HomePro Express Fulfilment', category: 'RETAIL', lineGroup: 'LINE_THP_Homepro_Team', contactEmail: 'deliveries@homepro.co.th' },
+  { id: 'COM-06', name: 'PowerBuy Tech Logistics', category: 'ELECTRONICS', lineGroup: 'LINE_THP_Powerbuy_Support', contactEmail: 'support@powerbuy.co.th' },
+  { id: 'COM-07', name: 'Banana IT (Com7 Logistics)', category: 'ELECTRONICS', lineGroup: 'LINE_THP_Banana_Com7', contactEmail: 'dispatch@com7.com' },
+  { id: 'COM-08', name: 'JIB Computer Group', category: 'ELECTRONICS', lineGroup: 'LINE_THP_JIB_Express', contactEmail: 'tracking@jib.co.th' },
+  { id: 'COM-09', name: 'Advice IT Infinite', category: 'ELECTRONICS', lineGroup: 'LINE_THP_Advice_Helpdesk', contactEmail: 'care@advice.co.th' },
+  { id: 'COM-10', name: 'OfficeMate Business Direct', category: 'RETAIL', lineGroup: 'LINE_THP_OfficeMate_B2B', contactEmail: 'b2b@officemate.co.th' },
+  { id: 'COM-11', name: 'Uniqlo Thailand E-Store', category: 'RETAIL', lineGroup: 'LINE_THP_Uniqlo_Online', contactEmail: 'contact@uniqlo.co.th' },
+  { id: 'COM-12', name: 'H&M Hennes & Mauritz TH', category: 'RETAIL', lineGroup: 'LINE_THP_HM_Fashion', contactEmail: 'service@hm.co.th' },
+  { id: 'COM-13', name: 'Zara Inditex Thailand', category: 'RETAIL', lineGroup: 'LINE_THP_Zara_CS', contactEmail: 'shipping@zara.co.th' },
+  { id: 'COM-14', name: 'Konvy Beauty Store', category: 'E-COMMERCE', lineGroup: 'LINE_THP_Konvy_Care', contactEmail: 'order@konvy.com' },
+  { id: 'COM-15', name: 'Watsons Online Thailand', category: 'RETAIL', lineGroup: 'LINE_THP_Watsons_Team', contactEmail: 'ecommerce@watsons.co.th' },
+  { id: 'COM-16', name: 'Boots Retail Thailand', category: 'RETAIL', lineGroup: 'LINE_THP_Boots_TH', contactEmail: 'care@boots.co.th' },
+  { id: 'COM-17', name: 'Eveandboy Official', category: 'RETAIL', lineGroup: 'LINE_THP_Eveandboy_CS', contactEmail: 'support@eveandboy.com' },
+  { id: 'COM-18', name: 'B2S Book and Stationery', category: 'RETAIL', lineGroup: 'LINE_THP_B2S_Online', contactEmail: 'b2sorders@central.co.th' },
+  { id: 'COM-19', name: 'SE-ED Book Center', category: 'RETAIL', lineGroup: 'LINE_THP_SEED_Delivery', contactEmail: 'online@se-ed.com' },
+  { id: 'COM-20', name: 'Naiin Bookstore (Amarin)', category: 'RETAIL', lineGroup: 'LINE_THP_Naiin_Help', contactEmail: 'cs@naiin.com' },
+  { id: 'COM-21', name: 'True Store Online', category: 'ELECTRONICS', lineGroup: 'LINE_THP_True_Delivery', contactEmail: 'shop@true.th' },
+  { id: 'COM-22', name: 'AIS Online Official', category: 'ELECTRONICS', lineGroup: 'LINE_THP_AIS_Devices', contactEmail: 'eshop@ais.th' },
+  { id: 'COM-23', name: 'Samsung Experience Store TH', category: 'ELECTRONICS', lineGroup: 'LINE_THP_Samsung_Care', contactEmail: 'cs@samsung.com/th' },
+  { id: 'COM-24', name: 'Apple Authorized Reseller TH', category: 'ELECTRONICS', lineGroup: 'LINE_THP_AppleAAR_Fulfill', contactEmail: 'care@aar-th.com' },
+  { id: 'COM-25', name: 'Decathlon Sports Thailand', category: 'RETAIL', lineGroup: 'LINE_THP_Decathlon_CS', contactEmail: 'contact@decathlon.co.th' },
+  { id: 'COM-26', name: 'Supersports Thailand', category: 'RETAIL', lineGroup: 'LINE_THP_Supersports_Ops', contactEmail: 'care@supersports.co.th' },
+  { id: 'COM-27', name: 'Big C Shopping Online', category: 'RETAIL', lineGroup: 'LINE_THP_BigC_Express', contactEmail: 'bigc_online@bigc.co.th' },
+  { id: 'COM-28', name: 'Lotus’s Online Delivery', category: 'RETAIL', lineGroup: 'LINE_THP_Lotuss_Care', contactEmail: 'lotus_care@lotuss.com' },
+  { id: 'COM-29', name: 'Tops Supermarket Online', category: 'RETAIL', lineGroup: 'LINE_THP_Tops_VIP', contactEmail: 'tops_support@tops.co.th' },
+  { id: 'COM-30', name: 'Gourmet Market Direct', category: 'RETAIL', lineGroup: 'LINE_THP_Gourmet_Ops', contactEmail: 'support@themall.co.th' },
+  { id: 'COM-31', name: 'Kasikorn Bank (Card Delivery)', category: 'FINANCE', lineGroup: 'LINE_THP_KBank_Cards', contactEmail: 'doc-delivery@kbank.com' },
+  { id: 'COM-32', name: 'SCB Document Service', category: 'FINANCE', lineGroup: 'LINE_THP_SCB_Parcels', contactEmail: 'express@scb.co.th' },
+  { id: 'COM-33', name: 'Bangkok Bank Card Center', category: 'FINANCE', lineGroup: 'LINE_THP_BBL_Secure', contactEmail: 'cards@bangkokbank.com' },
+  { id: 'COM-34', name: 'Krungthai Bank Logistics', category: 'FINANCE', lineGroup: 'LINE_THP_KTB_Ops', contactEmail: 'secure-mail@ktb.co.th' },
+  { id: 'COM-35', name: 'Krungsri Consumer Card', category: 'FINANCE', lineGroup: 'LINE_THP_Krungsri_Cards', contactEmail: 'card-dispatch@krungsri.com' },
+  { id: 'COM-36', name: 'AEON Thana Sinsap', category: 'FINANCE', lineGroup: 'LINE_THP_AEON_Direct', contactEmail: 'service@aeon.co.th' },
+  { id: 'COM-37', name: 'Muang Thai Life Insurance', category: 'FINANCE', lineGroup: 'LINE_THP_MTL_Docs', contactEmail: 'policy@muangthai.co.th' },
+  { id: 'COM-38', name: 'AIA Thailand Policy Service', category: 'FINANCE', lineGroup: 'LINE_THP_AIA_Mail', contactEmail: 'policy-th@aia.com' },
+  { id: 'COM-39', name: 'FWD Insurance Docs', category: 'FINANCE', lineGroup: 'LINE_THP_FWD_Direct', contactEmail: 'dispatch@fwd.co.th' },
+  { id: 'COM-40', name: 'Allianz Ayudhya Insurance', category: 'FINANCE', lineGroup: 'LINE_THP_AZAY_Secure', contactEmail: 'customer@azay.co.th' },
+  { id: 'COM-41', name: 'Amway Thailand Direct', category: 'RETAIL', lineGroup: 'LINE_THP_Amway_Ops', contactEmail: 'care@amway.co.th' },
+  { id: 'COM-42', name: 'Giffarine Online Hub', category: 'RETAIL', lineGroup: 'LINE_THP_Giffarine_CS', contactEmail: 'online@giffarine.com' },
+  { id: 'COM-43', name: 'Mistine BetterWay TH', category: 'RETAIL', lineGroup: 'LINE_THP_Mistine_Help', contactEmail: 'cs@mistine.co.th' },
+  { id: 'COM-44', name: 'Saha Group E-Store', category: 'RETAIL', lineGroup: 'LINE_THP_Saha_Direct', contactEmail: 'contact@sahagroup.com' },
+  { id: 'COM-45', name: 'ThaiBev Logistics Direct', category: 'RETAIL', lineGroup: 'LINE_THP_ThaiBev_CS', contactEmail: 'logistics@thaibev.com' },
+  { id: 'COM-46', name: 'Osotspa Store Fulfillment', category: 'RETAIL', lineGroup: 'LINE_THP_Osotspa_Ops', contactEmail: 'ecom@osotspa.com' },
+  { id: 'COM-47', name: 'CP All 7-Delivery Inter', category: 'LOGISTICS_PARTNER', lineGroup: 'LINE_THP_7Eleven_Hub', contactEmail: 'express@cpall.co.th' },
+  { id: 'COM-48', name: 'Flash Express Co-partner', category: 'LOGISTICS_PARTNER', lineGroup: 'LINE_THP_Flash_Bridge', contactEmail: 'partner@flashexpress.com' },
+  { id: 'COM-49', name: 'J&T Connect Transit', category: 'LOGISTICS_PARTNER', lineGroup: 'LINE_THP_JT_Bridge', contactEmail: 'interconnect@jtexpress.co.th' },
+  { id: 'COM-50', name: 'Kerry Express TH Joint Mail', category: 'LOGISTICS_PARTNER', lineGroup: 'LINE_THP_Kerry_Hub', contactEmail: 'joint@kerryexpress.com' }
+];
