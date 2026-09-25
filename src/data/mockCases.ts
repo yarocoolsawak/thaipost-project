@@ -1,12 +1,7 @@
 import type { CaseItem } from '../types/case';
 import { KNOWN_PARCELS } from '../services/trackTraceApi';
 
-const now = new Date('2026-09-23T11:00:00+07:00');
-const msPerHour = 3600 * 1000;
-
-// Helper to create dates relative to simulated "now"
-const hoursAgo = (h: number) => new Date(now.getTime() - h * msPerHour).toISOString();
-const hoursAhead = (h: number) => new Date(now.getTime() + h * msPerHour).toISOString();
+import { hoursAgo, hoursAhead } from './demoClock';
 
 // Every case is raised by a MyOrder shop from a shipped order (see src/data/myOrders.ts)
 export const INITIAL_CASES: CaseItem[] = [
@@ -193,7 +188,7 @@ export const INITIAL_CASES: CaseItem[] = [
     parcelInfo: KNOWN_PARCELS['EF123984512TH']
   },
 
-  // 4. CENTRAL_CONTACT_BRANCH (พัสดุหลงทิศ: ตอนแจ้งยังระบุ CEC ไม่ได้ ส่วนกลางระบุภายหลัง แล้วโทรสาขาโดยตรง)
+  // 4. CENTRAL_CONTACT_BRANCH (พัสดุหลงทิศ: ตอนแจ้งยังระบุ CEC ไม่ได้ จน QMS ยืนยันปลายทาง แล้วส่วนกลางโทรสาขาโดยตรง)
   {
     id: 'TP-2026-0004',
     trackingNumber: 'ED993812745TH',
@@ -208,7 +203,7 @@ export const INITIAL_CASES: CaseItem[] = [
     assignedCecName: 'CEC 7 (ภาคอีสานตอนบน 1)',
     assignedBranchName: 'ปณ.เมืองขอนแก่น (40000)',
     createdAt: hoursAgo(90),
-    dispatchedAt: hoursAgo(88),
+    dispatchedAt: hoursAgo(6),
     slaDeadline: hoursAgo(16),
     isSlaExceeded: true,
     branchContactLogs: [
@@ -262,11 +257,19 @@ export const INITIAL_CASES: CaseItem[] = [
       },
       {
         id: 'log-4-3',
-        timestamp: hoursAgo(88),
-        actorName: 'เจ้าหน้าที่ ปณ.ส่วนกลาง',
+        timestamp: hoursAgo(6),
+        actorName: 'ระบบ (Auto-Routing)',
         actorRole: 'CENTRAL',
-        action: 'ระบุ CEC และส่งเคส',
-        details: 'ส่งเคสไปยัง CEC-07 ประจำพื้นที่สาขาปลายทาง เพื่อตรวจสอบและประสานงาน'
+        action: 'ระบุ CEC อัตโนมัติและส่งเคส',
+        details: 'QMS ยืนยันพื้นที่ปลายทางแล้ว (ถึง ศป.ขอนแก่น) ระบุ CEC-07 จากรหัสไปรษณีย์ 40000 และส่งเข้าคิว CEC'
+      },
+      {
+        id: 'log-4-3a',
+        timestamp: hoursAgo(6),
+        actorName: 'ระบบ QMS',
+        actorRole: 'CENTRAL',
+        action: 'QMS อัปเดตสถานะพัสดุ',
+        details: 'ถึงศูนย์คัดแยกปลายทาง @ ศป.ขอนแก่น: แก้ไขเส้นทางเรียบร้อย สิ่งของถึงศูนย์คัดแยกปลายทาง'
       },
       {
         id: 'log-4-1b',
@@ -282,7 +285,7 @@ export const INITIAL_CASES: CaseItem[] = [
         actorName: 'ระบบ (Auto-Routing)',
         actorRole: 'CENTRAL',
         action: 'รอระบุ CEC ผู้รับผิดชอบ',
-        details: 'สถานะพัสดุล่าสุด "ส่งต่อผิดศูนย์คัดแยก" ยังยืนยันพื้นที่ปลายทางไม่ได้'
+        details: 'สถานะพัสดุใน QMS "ส่งต่อผิดศูนย์คัดแยก" ยังยืนยันพื้นที่ปลายทางไม่ได้'
       },
       {
         id: 'log-4-1',
@@ -407,7 +410,7 @@ export const INITIAL_CASES: CaseItem[] = [
         actorName: 'ระบบ (Auto-Routing)',
         actorRole: 'CENTRAL',
         action: 'ระบุ CEC อัตโนมัติและส่งเคส',
-        details: 'ยืนยันพื้นที่ปลายทางแล้ว ระบุ CEC-08 จากรหัสไปรษณีย์ 45000 และส่งเข้าคิว CEC'
+        details: 'QMS ยืนยันพื้นที่ปลายทางแล้ว ระบุ CEC-08 จากรหัสไปรษณีย์ 45000 และส่งเข้าคิว CEC'
       },
       {
         id: 'log-6-2',
@@ -415,7 +418,7 @@ export const INITIAL_CASES: CaseItem[] = [
         actorName: 'ระบบ (Auto-Routing)',
         actorRole: 'CENTRAL',
         action: 'รอระบุ CEC ผู้รับผิดชอบ',
-        details: 'พัสดุยังอยู่ระหว่างขนส่ง ระบบจะระบุ CEC อัตโนมัติเมื่อสถานะพัสดุอัปเดต'
+        details: 'พัสดุยังอยู่ระหว่างขนส่ง ระบบจะระบุ CEC อัตโนมัติเมื่อ QMS อัปเดตสถานะพัสดุ'
       },
       {
         id: 'log-6-1',
@@ -652,7 +655,7 @@ export const INITIAL_CASES: CaseItem[] = [
     slaDeadline: hoursAhead(32),
     isSlaExceeded: false,
     cecReply: {
-      answer: 'ปณ.บางรัก ตรวจสอบแล้ว พัสดุฝากไว้ที่เคาน์เตอร์นิติบุคคลอาคารชั้น G ตามที่ผู้รับเคยแจ้งไว้ มีลายเซ็นเจ้าหน้าที่นิติรับไว้ วันที่ 21 ก.ย. 11:10 น.',
+      answer: 'ปณ.บางรัก ตรวจสอบแล้ว พัสดุฝากไว้ที่เคาน์เตอร์นิติบุคคลอาคารชั้น G ตามที่ผู้รับเคยแจ้งไว้ มีลายเซ็นเจ้าหน้าที่นิติรับไว้ เมื่อวาน เวลา 11:10 น.',
       repliedAt: hoursAgo(20),
       repliedBy: 'CEC 1 เจ้าหน้าที่ กมลชนก ส.',
       branchNotes: 'ประสานบุรุษไปรษณีย์สายสีลม 3 ยืนยันแล้ว'
@@ -660,7 +663,7 @@ export const INITIAL_CASES: CaseItem[] = [
     centralReview: {
       reviewedAt: hoursAgo(18),
       reviewedBy: 'ปณ.ส่วนกลาง',
-      approvedAnswer: 'ไปรษณีย์ปลายทางยืนยันว่าพัสดุนำจ่ายโดยฝากไว้ที่เคาน์เตอร์นิติบุคคลของอาคาร (ชั้น G) เมื่อ 21 ก.ย. เวลา 11:10 น. รบกวนแจ้งผู้รับติดต่อรับพัสดุที่นิติบุคคลอาคารได้เลยครับ',
+      approvedAnswer: 'ไปรษณีย์ปลายทางยืนยันว่าพัสดุนำจ่ายโดยฝากไว้ที่เคาน์เตอร์นิติบุคคลของอาคาร (ชั้น G) เมื่อวาน เวลา 11:10 น. รบกวนแจ้งผู้รับติดต่อรับพัสดุที่นิติบุคคลอาคารได้เลยครับ',
       actionTaken: 'APPROVED'
     },
     branchContactLogs: [],
@@ -683,7 +686,7 @@ export const INITIAL_CASES: CaseItem[] = [
         id: 'msg-10-3',
         senderRole: 'CENTRAL',
         senderName: 'ปณ.ส่วนกลาง',
-        message: 'ไปรษณีย์ปลายทางยืนยันว่าพัสดุนำจ่ายโดยฝากไว้ที่เคาน์เตอร์นิติบุคคลของอาคาร (ชั้น G) เมื่อ 21 ก.ย. เวลา 11:10 น. รบกวนแจ้งผู้รับติดต่อรับพัสดุที่นิติบุคคลอาคารได้เลยครับ',
+        message: 'ไปรษณีย์ปลายทางยืนยันว่าพัสดุนำจ่ายโดยฝากไว้ที่เคาน์เตอร์นิติบุคคลของอาคาร (ชั้น G) เมื่อวาน เวลา 11:10 น. รบกวนแจ้งผู้รับติดต่อรับพัสดุที่นิติบุคคลอาคารได้เลยครับ',
         timestamp: hoursAgo(18)
       }
     ],

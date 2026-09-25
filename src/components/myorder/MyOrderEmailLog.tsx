@@ -6,6 +6,7 @@ import { EMAIL_REQUEST_TYPE_LABEL } from '../../utils/emailTemplates';
 import { MerchantCaseDetailModal } from './MerchantCaseDetailModal';
 import { MerchantStatusBadge } from './CaseProgress';
 import { MetricCard } from './MerchantOrders';
+import { rowOpenProps } from '../../utils/rowOpen';
 import { MailCheck, Mail, Store, UserCog, Paperclip, Eye, CalendarClock } from 'lucide-react';
 
 interface EmailRow {
@@ -117,7 +118,7 @@ export const MyOrderEmailLog: React.FC = () => {
                 </tr>
               ) : (
                 rows.map(({ email, caseItem }) => (
-                  <tr key={email.id}>
+                  <tr key={email.id} {...rowOpenProps(() => setViewCase(caseItem))}>
                     <td style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
                       {new Date(email.sentAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
                     </td>

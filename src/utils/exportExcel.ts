@@ -1,7 +1,19 @@
 import type { CaseItem } from '../types/case';
 import { ISSUE_CATEGORY_META } from '../components/common/IssueBadge';
+import { notify } from './dialog';
 
-export function exportCasesToExcel(cases: CaseItem[], filenamePrefix = 'ThaiPost_Cases'): void {
+// When the demo runs inside the Claude artifact viewer, pages cannot start downloads themselves;
+// the viewer's `downloads` capability asks the viewer to save the file instead.
+type DownloadsApi = { save: (req: { filename: string; data: Blob }) => Promise<unknown> };
+type ClaudeRuntime = { use?: (name: string) => Promise<unknown> };
+
+const getViewerDownloads = async (): Promise<DownloadsApi | null> => {
+  const runtime = (window as unknown as { claude?: ClaudeRuntime }).claude;
+  if (!runtime?.use) return null;
+  return ((await runtime.use('downloads')) as DownloadsApi | null) ?? null;
+};
+
+export async function exportCasesToExcel(cases: CaseItem[], filenamePrefix = 'ThaiPost_Cases'): Promise<void> {
   // Column Headers in Thai
   const headers = [
     'Case ID',
@@ -59,12 +71,27 @@ export function exportCasesToExcel(cases: CaseItem[], filenamePrefix = 'ThaiPost
 
   // Add UTF-8 BOM so Excel opens Thai characters without encoding issues
   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const filename = `${filenamePrefix}_${dateStr}.csv`;
+
+  const viewerDownloads = await getViewerDownloads();
+  if (viewerDownloads) {
+    try {
+      await viewerDownloads.save({ filename, data: blob });
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      // The viewer choosing "no" is not an error worth reporting
+      if (code !== 'declined') {
+        notify('ดาวน์โหลดไฟล์ Excel ไม่ได้ในหน้านี้ ลองเปิดเดโมในเบราว์เซอร์โดยตรง', { title: 'Export ไม่สำเร็จ', tone: 'danger' });
+      }
+    }
+    return;
+  }
+
   const url = URL.createObjectURL(blob);
-  
   const link = document.createElement('a');
   link.href = url;
-  const dateStr = new Date().toISOString().slice(0, 10);
-  link.setAttribute('download', `${filenamePrefix}_${dateStr}.csv`);
+  link.setAttribute('download', filename);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

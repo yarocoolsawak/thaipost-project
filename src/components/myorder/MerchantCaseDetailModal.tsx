@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import type { CaseItem, UserRole } from '../../types/case';
 import { useCases } from '../../context/CaseContext';
+import { confirmDialog } from '../../utils/dialog';
 import { CEC_REGIONS } from '../../data/cecRegions';
 import { TrackingTimeline } from '../common/TrackingTimeline';
 import { SlaBadge } from '../common/SlaBadge';
 import { IssueDisplay } from '../common/IssueBadge';
-import { CaseProgressStepper, MerchantStatusBadge } from './CaseProgress';
+import { CaseProgressStepper, LatestUpdate, MerchantStatusBadge } from './CaseProgress';
 import { EmailDispatchModal } from './EmailDispatchModal';
 import { EMAIL_REQUEST_TYPE_LABEL } from '../../utils/emailTemplates';
 import { X, RefreshCw, CheckCircle2, MessageSquare, Truck, History, MapPin, HelpCircle, Send, Mail, Paperclip } from 'lucide-react';
@@ -37,7 +38,8 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
   const isMerchant = role === 'MERCHANT';
   const hasAnswer = !!caseItem.centralReview;
 
-  // Merchants see milestones only (action + time), never internal details like branch officer phone numbers
+  // MyOrder admin sees every milestone (action + time, never internal details like officer phone numbers);
+  // shops only ever see the latest update, not the internal case status
   const publicTimeline = caseItem.activityLogs;
   // Messages from the MyOrder side (shop = CUSTOMER, MyOrder admin = MYORDER_ADMIN); first one is the original report.
   // Email copies are shown in the email section instead.
@@ -53,11 +55,11 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
     const result = await syncParcelTracking(caseItem.id);
     setSyncing(false);
     setSyncMessage(
-      result === 'CEC_ASSIGNED'
-        ? 'สถานะพัสดุอัปเดตแล้ว และระบบระบุ CEC ผู้รับผิดชอบให้เรียบร้อย'
-        : result === 'UPDATED'
-        ? 'สถานะพัสดุอัปเดตแล้ว'
-        : 'ยังไม่มีสถานะพัสดุใหม่'
+      result === 'CEC_ASSIGNED' && !isMerchant
+        ? 'QMS อัปเดตสถานะพัสดุแล้ว และระบบระบุ CEC ผู้รับผิดชอบให้เรียบร้อย'
+        : result !== 'NO_CHANGE'
+        ? 'QMS อัปเดตสถานะพัสดุแล้ว'
+        : 'QMS ยังไม่มีสถานะพัสดุใหม่'
     );
   };
 
@@ -73,10 +75,13 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
     setFollowUp('');
   };
 
-  const handleClose = () => {
-    if (window.confirm(`ยืนยันว่าได้รับคำตอบแล้ว และต้องการปิดเคส ${caseItem.id}?`)) {
-      closeCase(caseItem.id, 'ร้านค้ายืนยันรับทราบคำตอบผ่าน MyOrder');
-    }
+  const handleClose = async () => {
+    const ok = await confirmDialog(`ยืนยันว่าได้รับคำตอบแล้ว และต้องการปิดเคส ${caseItem.id}?`, {
+      title: 'รับทราบคำตอบ',
+      confirmLabel: 'ปิดเคส',
+      tone: 'success'
+    });
+    if (ok) closeCase(caseItem.id, 'ร้านค้ายืนยันรับทราบคำตอบผ่าน MyOrder');
   };
 
   return (
@@ -87,7 +92,7 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>{caseItem.id}</span>
             <span className="tracking-pill">{caseItem.trackingNumber}</span>
-            <MerchantStatusBadge status={caseItem.status} />
+            {!isMerchant && <MerchantStatusBadge status={caseItem.status} />}
           </div>
           <button type="button" className="close-btn" onClick={onClose}>
             <X size={20} />
@@ -108,7 +113,7 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
             className={`status-tab-btn ${tab === 'STATUS' ? 'active' : ''}`}
             onClick={() => setTab('STATUS')}
           >
-            <History size={14} /> สถานะการดำเนินการ
+            <History size={14} /> {isMerchant ? 'รายละเอียดเรื่อง' : 'สถานะการดำเนินการ'}
           </button>
           <button
             type="button"
@@ -122,7 +127,7 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
         <div className="modal-body">
           {tab === 'STATUS' ? (
             <>
-              <CaseProgressStepper caseItem={caseItem} />
+              {isMerchant ? <LatestUpdate caseItem={caseItem} /> : <CaseProgressStepper caseItem={caseItem} />}
 
               {/* Order + responsible unit */}
               <div
@@ -141,12 +146,13 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
                   <div style={{ whiteSpace: 'pre-wrap' }}>{caseItem.customerInquiry}</div>
                 </div>
 
+                {!isMerchant && (
                 <div style={{ border: '1px solid var(--thp-border)', borderRadius: '10px', padding: '0.85rem', fontSize: '0.84rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   <div style={{ fontWeight: 700 }}>หน่วยงานที่ดูแล</div>
                   {cec ? (
                     <>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#4338CA', fontWeight: 600 }}>
-                        <MapPin size={14} /> {cec.name}
+                        <MapPin size={14} /> CEC {cec.id}
                       </div>
                       <div style={{ color: 'var(--thp-muted)' }}>ปลายทาง: {caseItem.assignedBranchName || caseItem.parcelInfo.destPostOffice}</div>
                     </>
@@ -156,7 +162,7 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
                         <HelpCircle size={11} /> รอระบุ CEC
                       </span>
                       <div style={{ color: 'var(--thp-muted)' }}>
-                        พัสดุยังไม่ถึงพื้นที่ปลายทาง ({caseItem.parcelInfo.currentPostalStatus}) ระบบจะระบุ CEC ให้อัตโนมัติเมื่อสถานะพัสดุอัปเดต
+                        พัสดุยังไม่ถึงพื้นที่ปลายทาง ({caseItem.parcelInfo.currentPostalStatus}) ระบบจะระบุ CEC ให้อัตโนมัติเมื่อ QMS อัปเดตสถานะพัสดุ
                       </div>
                     </>
                   )}
@@ -165,6 +171,7 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
                     <SlaBadge deadlineIso={caseItem.slaDeadline} isExceeded={caseItem.isSlaExceeded} status={caseItem.status} />
                   </div>
                 </div>
+                )}
               </div>
 
               {/* Approved answer */}
@@ -226,7 +233,8 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
                 )}
               </div>
 
-              {/* Public timeline */}
+              {/* Full milestone timeline: MyOrder admin only */}
+              {!isMerchant && (
               <div>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.5rem' }}>ความคืบหน้า</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
@@ -243,6 +251,7 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
                   ))}
                 </div>
               </div>
+              )}
 
               {/* Follow-up messages */}
               {caseItem.status !== 'CLOSED' && (
@@ -282,7 +291,7 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
                   {syncMessage && <span style={{ marginLeft: '0.5rem' }}>— {syncMessage}</span>}
                 </span>
                 <button type="button" className="btn-secondary" onClick={handleSync} disabled={syncing}>
-                  <RefreshCw size={14} /> {syncing ? 'กำลังดึงข้อมูล...' : 'ดึงสถานะพัสดุล่าสุด'}
+                  <RefreshCw size={14} /> {syncing ? 'กำลังดึงข้อมูล...' : 'ดึงสถานะล่าสุดจาก QMS'}
                 </button>
               </div>
               <TrackingTimeline events={caseItem.parcelInfo.events} currentStatus={caseItem.parcelInfo.currentPostalStatus} />

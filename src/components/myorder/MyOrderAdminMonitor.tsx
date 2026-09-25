@@ -4,58 +4,48 @@ import { useMyOrder } from '../../context/MyOrderContext';
 import type { CaseItem } from '../../types/case';
 import { IssueDisplay } from '../common/IssueBadge';
 import { SlaBadge } from '../common/SlaBadge';
-import { CecCell, DuplicateChip, EmailCountChip } from '../common/CecAssignment';
+import { DestinationCell, DuplicateChip, EmailCountChip, ReportedAtCell } from '../common/CecAssignment';
+import { DateRangeFilter } from '../common/DateRangeFilter';
+import { rowOpenProps } from '../../utils/rowOpen';
 import { MerchantStatusBadge } from './CaseProgress';
 import { MerchantCaseDetailModal } from './MerchantCaseDetailModal';
 import { EmailDispatchModal } from './EmailDispatchModal';
 import { MetricCard } from './MerchantOrders';
 import { exportCasesToExcel } from '../../utils/exportExcel';
+import { MYORDER_CASE_FILTERS, matchesCaseFilter, type MyOrderCaseFilter } from './caseFilters';
 import { MonitorCheck, Eye, HelpCircle, Send, CheckCircle2, AlertTriangle, FileSpreadsheet, Store, Layers, Mail } from 'lucide-react';
-
-type MonitorFilter = 'ALL' | 'PENDING_CEC' | 'AT_CEC' | 'ANSWERED' | 'SLA' | 'CLOSED';
-
-const matchesFilter = (c: CaseItem, f: MonitorFilter) => {
-  switch (f) {
-    case 'PENDING_CEC':
-      return c.assignedCecId === undefined && c.status !== 'CLOSED';
-    case 'AT_CEC':
-      return c.assignedCecId !== undefined && !c.centralReview && c.status !== 'CLOSED';
-    case 'ANSWERED':
-      return !!c.centralReview && c.status !== 'CLOSED';
-    case 'SLA':
-      return c.isSlaExceeded && c.status !== 'CLOSED';
-    case 'CLOSED':
-      return c.status === 'CLOSED';
-    default:
-      return true;
-  }
-};
 
 interface MyOrderAdminMonitorProps {
   onOpenBulkReport: () => void;
 }
 
 export const MyOrderAdminMonitor: React.FC<MyOrderAdminMonitorProps> = ({ onOpenBulkReport }) => {
-  const { filteredCases } = useCases();
-  const { shops } = useMyOrder();
-  const [filter, setFilter] = useState<MonitorFilter>('ALL');
-  const [shopFilter, setShopFilter] = useState('ALL');
+  const { searchQuery } = useCases();
+  const {
+    shops,
+    myOrderCases,
+    caseFilter: filter,
+    setCaseFilter: setFilter,
+    adminShopFilter: shopFilter,
+    setAdminShopFilter: setShopFilter
+  } = useMyOrder();
   const [viewCase, setViewCase] = useState<CaseItem | null>(null);
   const [emailCase, setEmailCase] = useState<CaseItem | null>(null);
 
-  // MyOrder admin monitors every case (all cases come from MyOrder shops)
-  const scoped = filteredCases.filter(c => shopFilter === 'ALL' || c.myOrderRef.shopId === shopFilter);
-  const visible = scoped.filter(c => matchesFilter(c, filter));
-  const count = (f: MonitorFilter) => scoped.filter(c => matchesFilter(c, f)).length;
+  // MyOrder admin monitors every shop's cases (shop picker + status filter are shared with the sidebar)
+  const q = searchQuery.trim().toLowerCase();
+  const scoped = myOrderCases.filter(
+    c =>
+      !q ||
+      c.id.toLowerCase().includes(q) ||
+      c.trackingNumber.toLowerCase().includes(q) ||
+      c.myOrderRef.orderId.toLowerCase().includes(q) ||
+      c.companyName.toLowerCase().includes(q)
+  );
+  const visible = scoped.filter(c => matchesCaseFilter(c, filter));
+  const count = (f: MyOrderCaseFilter) => scoped.filter(c => matchesCaseFilter(c, f)).length;
 
-  const tabs: { key: MonitorFilter; label: string }[] = [
-    { key: 'ALL', label: 'ทั้งหมด' },
-    { key: 'PENDING_CEC', label: 'รอระบุ CEC' },
-    { key: 'AT_CEC', label: 'อยู่ที่ CEC' },
-    { key: 'ANSWERED', label: 'ได้คำตอบแล้ว' },
-    { key: 'SLA', label: 'เกิน SLA' },
-    { key: 'CLOSED', label: 'ปิดแล้ว' }
-  ];
+  const tabs = MYORDER_CASE_FILTERS.map(f => ({ key: f.key, label: f.key === 'ALL' ? 'ทั้งหมด' : f.label }));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -69,6 +59,7 @@ export const MyOrderAdminMonitor: React.FC<MyOrderAdminMonitorProps> = ({ onOpen
             <p>เคสที่ร้านค้าแจ้งผ่าน MyOrder ถูกส่งตรงเข้า ปณ./CEC — ติดตามความคืบหน้าทุกร้านได้ที่นี่</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <DateRangeFilter idPrefix="myorder-admin-date" />
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--thp-muted)' }}>
               <Store size={14} />
               <select
@@ -126,8 +117,9 @@ export const MyOrderAdminMonitor: React.FC<MyOrderAdminMonitorProps> = ({ onOpen
               <tr>
                 <th>ร้านค้า / คำสั่งซื้อ</th>
                 <th>Case ID / เลขพัสดุ</th>
+                <th>วันเวลาที่แจ้ง</th>
                 <th>ปัญหา</th>
-                <th>ปลายทาง & CEC</th>
+                <th>ปลายทาง & กลุ่ม CEC</th>
                 <th>สถานะ</th>
                 <th>SLA</th>
                 <th style={{ textAlign: 'right' }}></th>
@@ -136,13 +128,13 @@ export const MyOrderAdminMonitor: React.FC<MyOrderAdminMonitorProps> = ({ onOpen
             <tbody>
               {visible.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
                     ไม่มีเคสในหมวดนี้
                   </td>
                 </tr>
               ) : (
                 visible.map(c => (
-                  <tr key={c.id}>
+                  <tr key={c.id} {...rowOpenProps(() => setViewCase(c))}>
                     <td>
                       <div style={{ fontWeight: 600 }}>{c.myOrderRef.shopName}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>
@@ -158,11 +150,13 @@ export const MyOrderAdminMonitor: React.FC<MyOrderAdminMonitorProps> = ({ onOpen
                       <DuplicateChip caseItem={c} />
                     </td>
                     <td>
+                      <ReportedAtCell iso={c.createdAt} />
+                    </td>
+                    <td>
                       <IssueDisplay category={c.category} urgency={c.urgency} inquiry={c.customerInquiry} compact />
                     </td>
                     <td>
-                      <div style={{ fontWeight: 600, fontSize: '0.82rem' }}>{c.assignedBranchName || c.parcelInfo.destPostOffice}</div>
-                      <CecCell caseItem={c} showHint />
+                      <DestinationCell caseItem={c} showHint />
                     </td>
                     <td>
                       <MerchantStatusBadge status={c.status} />

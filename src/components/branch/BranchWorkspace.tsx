@@ -4,6 +4,10 @@ import type { CaseItem } from '../../types/case';
 import { CaseDetailModal } from '../common/CaseDetailModal';
 import { SlaBadge } from '../common/SlaBadge';
 import { IssueDisplay } from '../common/IssueBadge';
+import { ReportedAtCell } from '../common/CecAssignment';
+import { DateRangeFilter } from '../common/DateRangeFilter';
+import { rowOpenProps } from '../../utils/rowOpen';
+import { notify } from '../../utils/dialog';
 import {
   Package,
   CheckCircle2,
@@ -13,6 +17,7 @@ import {
 export const BranchWorkspace: React.FC = () => {
   const {
     cases,
+    dateScopedCases,
     selectedBranchName,
     setSelectedBranchName,
     addChatMessage
@@ -27,7 +32,7 @@ export const BranchWorkspace: React.FC = () => {
     new Set(cases.map(c => c.assignedBranchName || c.parcelInfo.destPostOffice))
   );
 
-  const branchCases = cases.filter(
+  const branchCases = dateScopedCases.filter(
     c =>
       (c.assignedBranchName && c.assignedBranchName.includes(selectedBranchName.split(' ')[0])) ||
       c.status === 'CENTRAL_CONTACT_BRANCH' ||
@@ -45,7 +50,7 @@ export const BranchWorkspace: React.FC = () => {
       `เจ้าหน้าที่ ${selectedBranchName}`
     );
 
-    alert('บันทึกผลการดำเนินการของสาขาปลายทางเรียบร้อยแล้ว');
+    notify('บันทึกผลการดำเนินการของสาขาปลายทางเรียบร้อยแล้ว', { title: 'บันทึกแล้ว', tone: 'success' });
     setUpdateActionCase(null);
     setActionNote('');
   };
@@ -65,7 +70,8 @@ export const BranchWorkspace: React.FC = () => {
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <DateRangeFilter idPrefix="branch-date" />
             <span style={{ fontSize: '0.82rem', color: 'var(--thp-muted)' }}>เลือกสาขาปลายทาง:</span>
             <select
               className="form-control"
@@ -90,6 +96,7 @@ export const BranchWorkspace: React.FC = () => {
             <thead>
               <tr>
                 <th>Case ID / เลขพัสดุ</th>
+                <th>วันเวลาที่แจ้ง</th>
                 <th>ร้านค้า (MyOrder)</th>
                 <th>ผู้รับปลายทาง</th>
                 <th>ปัญหา & คำร้อง</th>
@@ -102,7 +109,7 @@ export const BranchWorkspace: React.FC = () => {
             <tbody>
               {branchCases.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
                     ไม่มีเคสที่ถูกยกระดับหรือติดต่อมายังสาขานี้
                   </td>
                 </tr>
@@ -110,10 +117,13 @@ export const BranchWorkspace: React.FC = () => {
                 branchCases.map(item => {
                   const latestBranchLog = item.branchContactLogs[0];
                   return (
-                    <tr key={item.id}>
+                    <tr key={item.id} {...rowOpenProps(() => setSelectedCaseDetail(item))}>
                       <td>
                         <div className="tracking-pill">{item.trackingNumber}</div>
                         <div className="case-id-sub">{item.id}</div>
+                      </td>
+                      <td>
+                        <ReportedAtCell iso={item.createdAt} />
                       </td>
                       <td>
                         <div style={{ fontWeight: 600 }}>{item.companyName}</div>

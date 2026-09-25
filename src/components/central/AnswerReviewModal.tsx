@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { CaseItem } from '../../types/case';
 import { useCases } from '../../context/CaseContext';
+import { notify } from '../../utils/dialog';
 import { CheckCircle2, Edit3, RotateCcw, X, Send } from 'lucide-react';
 
 interface AnswerReviewModalProps {
@@ -20,7 +21,7 @@ export const AnswerReviewModal: React.FC<AnswerReviewModalProps> = ({ caseItem, 
   const handleConfirm = () => {
     if (mode === 'REQUEST_INFO') {
       if (!requestMoreInfoText.trim()) {
-        alert('กรุณากรอกข้อมูลที่ต้องการให้ CEC ตรวจสอบเพิ่มเติม');
+        notify('กรุณากรอกข้อมูลที่ต้องการให้ CEC ตรวจสอบเพิ่มเติม', { title: 'ข้อมูลยังไม่ครบ' });
         return;
       }
       centralReviewAnswer(caseItem.id, 'REQUESTED_MORE_INFO', '', requestMoreInfoText.trim());
@@ -30,7 +31,7 @@ export const AnswerReviewModal: React.FC<AnswerReviewModalProps> = ({ caseItem, 
 
     if (mode === 'EDIT') {
       if (!editedAnswer.trim()) {
-        alert('กรุณากรอกคำตอบที่แก้ไขแล้ว');
+        notify('กรุณากรอกคำตอบที่แก้ไขแล้ว', { title: 'ข้อมูลยังไม่ครบ' });
         return;
       }
       centralReviewAnswer(caseItem.id, 'EDITED', editedAnswer.trim(), reviewNotes.trim());

@@ -1,4 +1,5 @@
 import type { ParcelInfo, TrackingEvent } from '../types/case';
+import { eventStamp, formatEventTimestamp } from '../data/demoClock';
 
 export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
   'ED882194821TH': {
@@ -16,31 +17,31 @@ export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
     weightKg: 1.45,
     events: [
       {
-        timestamp: '2026-09-20 09:15:22',
+        timestamp: eventStamp(73.74),
         status: 'รับฝาก',
         location: 'ปณ.บางซื่อ',
         description: 'รับฝากเข้าระบบเรียบร้อยแล้ว'
       },
       {
-        timestamp: '2026-09-20 18:30:10',
+        timestamp: eventStamp(64.5),
         status: 'ส่งต่อ',
         location: 'ศป.EMS (กรุงเทพฯ)',
         description: 'สิ่งของออกจากศูนย์คัดแยก มุ่งหน้า ศป.เด่นชัย'
       },
       {
-        timestamp: '2026-09-21 07:45:00',
+        timestamp: eventStamp(51.25),
         status: 'ถึงที่ทำการปลายทาง',
         location: 'ปณ.สันกำแพง',
         description: 'สิ่งของถึงที่ทำการปลายทางแล้ว รอนำจ่าย'
       },
       {
-        timestamp: '2026-09-21 11:20:15',
+        timestamp: eventStamp(47.66),
         status: 'เตรียมการนำจ่าย',
         location: 'ปณ.สันกำแพง',
         description: 'เจ้าหน้าที่นำจ่าย นายสมพงษ์ นำส่งมอบ'
       },
       {
-        timestamp: '2026-09-21 15:40:02',
+        timestamp: eventStamp(43.33),
         status: 'นำจ่ายสำเร็จ',
         location: 'ปณ.สันกำแพง',
         description: 'นำจ่ายสำเร็จ ผู้รับลงชื่อแทน: สมศรี (รปภ.)',
@@ -63,25 +64,25 @@ export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
     weightKg: 3.20,
     events: [
       {
-        timestamp: '2026-09-18 10:00:00',
+        timestamp: eventStamp(121),
         status: 'รับฝาก',
         location: 'ปณ.สำเหร่',
         description: 'รับฝากเข้าระบบ'
       },
       {
-        timestamp: '2026-09-18 20:10:00',
+        timestamp: eventStamp(110.83),
         status: 'ส่งต่อ',
         location: 'ศป.EMS',
         description: 'ส่งต่อไปยัง ศป.หาดใหญ่'
       },
       {
-        timestamp: '2026-09-19 14:20:00',
+        timestamp: eventStamp(92.67),
         status: 'ถึงที่ทำการปลายทาง',
         location: 'ปณ.หาดใหญ่',
         description: 'สิ่งของถึงที่ทำการ'
       },
       {
-        timestamp: '2026-09-20 09:30:00',
+        timestamp: eventStamp(73.5),
         status: 'เตรียมการนำจ่าย',
         location: 'ปณ.หาดใหญ่',
         description: 'เตรียมการนำจ่าย (นำจ่ายไม่สำเร็จ: บ้านปิด)'
@@ -98,21 +99,27 @@ export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
     receiverName: 'ศ.ดร. นันทวัน รัตนโกสินทร์',
     receiverPhone: '086-123-XXXX',
     receiverAddress: '123/9 ม.ขอนแก่น ถ.มิตรภาพ ต.ในเมือง อ.เมือง จ.ขอนแก่น 40000',
-    currentPostalStatus: 'ส่งต่อผิดศูนย์คัดแยก (กำลังแก้ไขเส้นทาง)',
+    currentPostalStatus: 'ถึงศูนย์คัดแยกปลายทาง (ขอนแก่น) หลังแก้ไขเส้นทาง',
     signerName: undefined,
     weightKg: 0.85,
     events: [
       {
-        timestamp: '2026-09-19 14:10:00',
+        timestamp: eventStamp(92.83),
         status: 'รับฝาก',
         location: 'ปณ.มีนบุรี',
         description: 'รับฝากเข้าระบบ'
       },
       {
-        timestamp: '2026-09-20 02:40:00',
+        timestamp: eventStamp(80.33),
         status: 'ส่งต่อผิดเส้นทาง',
         location: 'ศป.อุดรธานี',
         description: 'พบพัสดุคัดแยกผิดสาย ส่งต่อกลับ ศป.ขอนแก่น'
+      },
+      {
+        timestamp: eventStamp(6),
+        status: 'ถึงศูนย์คัดแยกปลายทาง',
+        location: 'ศป.ขอนแก่น',
+        description: 'แก้ไขเส้นทางเรียบร้อย สิ่งของถึงศูนย์คัดแยกปลายทาง'
       }
     ]
   },
@@ -131,13 +138,13 @@ export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
     weightKg: 0.65,
     events: [
       {
-        timestamp: '2026-09-17 11:00:00',
+        timestamp: eventStamp(144),
         status: 'รับฝาก',
         location: 'ปณ.ลาดพร้าว',
         description: 'รับฝากเข้าระบบ'
       },
       {
-        timestamp: '2026-09-18 16:20:00',
+        timestamp: eventStamp(114.67),
         status: 'ถึงศูนย์คัดแยกปลายทาง',
         location: 'ศป.ภูเก็ต',
         description: 'พบกล่องพัสดุยับเยิน มีคราบของเหลวซึม กำลังทำบันทึกความเสียหาย'
@@ -159,19 +166,19 @@ export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
     weightKg: 4.8,
     events: [
       {
-        timestamp: '2026-09-22 09:00:00',
+        timestamp: eventStamp(26),
         status: 'รับฝาก',
         location: 'ปณ.บางพลี',
         description: 'รับฝากเข้าระบบ'
       },
       {
-        timestamp: '2026-09-22 14:00:00',
+        timestamp: eventStamp(21),
         status: 'ถึงที่ทำการปลายทาง',
         location: 'ปณ.เมืองชลบุรี',
         description: 'รอนำจ่าย'
       },
       {
-        timestamp: '2026-09-22 16:30:00',
+        timestamp: eventStamp(18.5),
         status: 'นำจ่ายสำเร็จ',
         location: 'ปณ.เมืองชลบุรี',
         description: 'ผู้รับลงนามรับพัสดุเรียบร้อย',
@@ -195,10 +202,10 @@ export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
     signerName: 'ป้าสมใจ (เพื่อนบ้าน)',
     weightKg: 0.9,
     events: [
-      { timestamp: '2026-09-19 10:12:00', status: 'รับฝาก', location: 'ปณ.สุรินทร์', description: 'รับฝากเข้าระบบ (EMS)' },
-      { timestamp: '2026-09-19 21:40:00', status: 'ส่งต่อ', location: 'ศป.นครราชสีมา', description: 'สิ่งของออกจากศูนย์คัดแยก' },
-      { timestamp: '2026-09-20 08:05:00', status: 'ถึงที่ทำการปลายทาง', location: 'ปณ.เมืองนครราชสีมา', description: 'สิ่งของถึงที่ทำการปลายทางแล้ว รอนำจ่าย' },
-      { timestamp: '2026-09-20 13:22:00', status: 'นำจ่ายสำเร็จ', location: 'ปณ.เมืองนครราชสีมา', description: 'นำจ่ายสำเร็จ ผู้รับลงชื่อแทน: ป้าสมใจ (เพื่อนบ้าน)', recipientOrSigner: 'ป้าสมใจ (เพื่อนบ้าน)' }
+      { timestamp: eventStamp(96.8), status: 'รับฝาก', location: 'ปณ.สุรินทร์', description: 'รับฝากเข้าระบบ (EMS)' },
+      { timestamp: eventStamp(85.33), status: 'ส่งต่อ', location: 'ศป.นครราชสีมา', description: 'สิ่งของออกจากศูนย์คัดแยก' },
+      { timestamp: eventStamp(74.92), status: 'ถึงที่ทำการปลายทาง', location: 'ปณ.เมืองนครราชสีมา', description: 'สิ่งของถึงที่ทำการปลายทางแล้ว รอนำจ่าย' },
+      { timestamp: eventStamp(69.63), status: 'นำจ่ายสำเร็จ', location: 'ปณ.เมืองนครราชสีมา', description: 'นำจ่ายสำเร็จ ผู้รับลงชื่อแทน: ป้าสมใจ (เพื่อนบ้าน)', recipientOrSigner: 'ป้าสมใจ (เพื่อนบ้าน)' }
     ]
   },
   'EN100200302TH': {
@@ -215,8 +222,8 @@ export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
     signerName: undefined,
     weightKg: 1.1,
     events: [
-      { timestamp: '2026-09-18 15:30:00', status: 'รับฝาก', location: 'ปณ.สุรินทร์', description: 'รับฝากเข้าระบบ (EMS)' },
-      { timestamp: '2026-09-19 02:10:00', status: 'ส่งต่อ', location: 'ศป.นครราชสีมา', description: 'สิ่งของออกจากศูนย์คัดแยก ยังไม่มีข้อมูลการรับเข้าศูนย์ปลายทาง' }
+      { timestamp: eventStamp(115.5), status: 'รับฝาก', location: 'ปณ.สุรินทร์', description: 'รับฝากเข้าระบบ (EMS)' },
+      { timestamp: eventStamp(104.83), status: 'ส่งต่อ', location: 'ศป.นครราชสีมา', description: 'สิ่งของออกจากศูนย์คัดแยก ยังไม่มีข้อมูลการรับเข้าศูนย์ปลายทาง' }
     ]
   },
   'EN100200304TH': {
@@ -233,9 +240,9 @@ export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
     signerName: 'อรอุมา (ผู้รับโดยตรง)',
     weightKg: 2.4,
     events: [
-      { timestamp: '2026-09-19 09:00:00', status: 'รับฝาก', location: 'ปณ.ลำลูกกา', description: 'รับฝากเข้าระบบ' },
-      { timestamp: '2026-09-20 17:20:00', status: 'ถึงที่ทำการปลายทาง', location: 'ปณ.เมืองสุราษฎร์ธานี', description: 'สิ่งของถึงที่ทำการปลายทาง' },
-      { timestamp: '2026-09-21 10:45:00', status: 'นำจ่ายสำเร็จ', location: 'ปณ.เมืองสุราษฎร์ธานี', description: 'ผู้รับลงนามรับพัสดุ (กล่องบุบ)', recipientOrSigner: 'อรอุมา' }
+      { timestamp: eventStamp(98), status: 'รับฝาก', location: 'ปณ.ลำลูกกา', description: 'รับฝากเข้าระบบ' },
+      { timestamp: eventStamp(65.67), status: 'ถึงที่ทำการปลายทาง', location: 'ปณ.เมืองสุราษฎร์ธานี', description: 'สิ่งของถึงที่ทำการปลายทาง' },
+      { timestamp: eventStamp(48.25), status: 'นำจ่ายสำเร็จ', location: 'ปณ.เมืองสุราษฎร์ธานี', description: 'ผู้รับลงนามรับพัสดุ (กล่องบุบ)', recipientOrSigner: 'อรอุมา' }
     ]
   },
   'EN100200305TH': {
@@ -252,8 +259,8 @@ export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
     signerName: undefined,
     weightKg: 1.6,
     events: [
-      { timestamp: '2026-09-20 11:15:00', status: 'รับฝาก', location: 'ปณ.ลำลูกกา', description: 'รับฝากเข้าระบบ' },
-      { timestamp: '2026-09-21 04:50:00', status: 'ส่งต่อผิดเส้นทาง', location: 'ศป.พิษณุโลก', description: 'พบพัสดุคัดแยกผิดสาย อยู่ระหว่างตรวจสอบเส้นทางใหม่' }
+      { timestamp: eventStamp(71.75), status: 'รับฝาก', location: 'ปณ.ลำลูกกา', description: 'รับฝากเข้าระบบ' },
+      { timestamp: eventStamp(54.17), status: 'ส่งต่อผิดเส้นทาง', location: 'ศป.พิษณุโลก', description: 'พบพัสดุคัดแยกผิดสาย อยู่ระหว่างตรวจสอบเส้นทางใหม่' }
     ]
   },
   'EN100200307TH': {
@@ -270,9 +277,9 @@ export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
     signerName: 'เคาน์เตอร์นิติบุคคลอาคาร',
     weightKg: 0.4,
     events: [
-      { timestamp: '2026-09-20 13:00:00', status: 'รับฝาก', location: 'ปณ.หลักสี่', description: 'รับฝากเข้าระบบ (EMS)' },
-      { timestamp: '2026-09-21 07:30:00', status: 'ถึงที่ทำการปลายทาง', location: 'ปณ.บางรัก', description: 'สิ่งของถึงที่ทำการปลายทาง' },
-      { timestamp: '2026-09-21 11:10:00', status: 'นำจ่ายสำเร็จ', location: 'ปณ.บางรัก', description: 'ฝากไว้กับเคาน์เตอร์นิติบุคคลอาคาร', recipientOrSigner: 'นิติบุคคลอาคาร' }
+      { timestamp: eventStamp(70), status: 'รับฝาก', location: 'ปณ.หลักสี่', description: 'รับฝากเข้าระบบ (EMS)' },
+      { timestamp: eventStamp(51.5), status: 'ถึงที่ทำการปลายทาง', location: 'ปณ.บางรัก', description: 'สิ่งของถึงที่ทำการปลายทาง' },
+      { timestamp: eventStamp(47.83), status: 'นำจ่ายสำเร็จ', location: 'ปณ.บางรัก', description: 'ฝากไว้กับเคาน์เตอร์นิติบุคคลอาคาร', recipientOrSigner: 'นิติบุคคลอาคาร' }
     ]
   },
   'EN100200308TH': {
@@ -289,14 +296,14 @@ export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
     signerName: undefined,
     weightKg: 0.7,
     events: [
-      { timestamp: '2026-09-21 16:00:00', status: 'รับฝาก', location: 'ปณ.หลักสี่', description: 'รับฝากเข้าระบบ' },
-      { timestamp: '2026-09-22 09:40:00', status: 'ถึงที่ทำการปลายทาง', location: 'ปณ.เมืองชลบุรี', description: 'สิ่งของถึงที่ทำการปลายทาง รอนำจ่าย' }
+      { timestamp: eventStamp(43), status: 'รับฝาก', location: 'ปณ.หลักสี่', description: 'รับฝากเข้าระบบ' },
+      { timestamp: eventStamp(25.33), status: 'ถึงที่ทำการปลายทาง', location: 'ปณ.เมืองชลบุรี', description: 'สิ่งของถึงที่ทำการปลายทาง รอนำจ่าย' }
     ]
   }
 };
 
-// Scripted future Track & Trace events for parcels that are still moving.
-// Each "sync" reveals the next event, simulating a status update arriving from the ThaiPost API.
+// Scripted future QMS parcel events for parcels that are still moving.
+// Each "sync" reveals the next event, simulating a status update arriving from QMS.
 const UPCOMING_EVENTS: Record<string, { event: Omit<TrackingEvent, 'timestamp'>; postalStatus: string }[]> = {
   'EN100200302TH': [
     {
@@ -313,19 +320,9 @@ const UPCOMING_EVENTS: Record<string, { event: Omit<TrackingEvent, 'timestamp'>;
       event: { status: 'ถึงศูนย์คัดแยกปลายทาง', location: 'ศป.ลำปาง', description: 'แก้ไขเส้นทางเรียบร้อย สิ่งของถึงศูนย์คัดแยกปลายทาง' },
       postalStatus: 'ถึงศูนย์คัดแยกปลายทาง'
     }
-  ],
-  'ED993812745TH': [
-    {
-      event: { status: 'ถึงศูนย์คัดแยกปลายทาง', location: 'ศป.ขอนแก่น', description: 'แก้ไขเส้นทางเรียบร้อย สิ่งของถึงศูนย์คัดแยกปลายทาง' },
-      postalStatus: 'ถึงศูนย์คัดแยกปลายทาง'
-    }
   ]
 };
 
-const formatEventTimestamp = (d: Date) => {
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-};
 
 // ---------- More MyOrder parcels (compact specs, used e.g. for bulk "เร่งนำส่ง" reports) ----------
 type ParcelStage = 'IN_TRANSIT' | 'AT_DEST' | 'DELIVERY_FAILED';
@@ -342,8 +339,7 @@ interface ParcelSpec {
   shippedHoursAgo: number;
 }
 
-const SIM_NOW = new Date('2026-09-23T11:00:00+07:00').getTime();
-const stamp = (hoursAgo: number) => formatEventTimestamp(new Date(SIM_NOW - hoursAgo * 3600 * 1000));
+const stamp = eventStamp;
 
 function registerParcel(spec: ParcelSpec) {
   const [originOffice, originZip] = spec.origin;
@@ -426,7 +422,7 @@ function registerParcel(spec: ParcelSpec) {
 ].forEach(spec => registerParcel(spec as ParcelSpec));
 
 /**
- * Pull the latest Track & Trace status for a parcel we already hold.
+ * Pull the latest parcel status from QMS for a parcel we already hold (mock).
  * Returns the same object when there is nothing new.
  */
 export async function fetchTrackingUpdate(current: ParcelInfo): Promise<ParcelInfo> {
@@ -454,7 +450,7 @@ export async function fetchThaiPostTrackAndTrace(trackingNumber: string): Promis
     return KNOWN_PARCELS[cleanNumber];
   }
   
-  // Dynamically generate realistic ThaiPost Track & Trace data for arbitrary valid number
+  // Dynamically generate realistic QMS parcel data for an arbitrary valid number
   const digits = cleanNumber.replace(/\D/g, '') || '123456789';
   const destZip = '10' + (parseInt(digits.slice(0, 3) || '100', 10) % 900 + 100).toString().slice(0, 3);
   

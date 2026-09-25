@@ -5,7 +5,9 @@ import { CEC_REGIONS } from '../../data/cecRegions';
 import { SlaBadge } from '../common/SlaBadge';
 import { CaseDetailModal } from '../common/CaseDetailModal';
 import { IssueDisplay } from '../common/IssueBadge';
-import { DuplicateChip, EmailCountChip, OrderRefChip } from '../common/CecAssignment';
+import { DuplicateChip, EmailCountChip, OrderRefChip, ReportedAtCell } from '../common/CecAssignment';
+import { DateRangeFilter } from '../common/DateRangeFilter';
+import { rowOpenProps } from '../../utils/rowOpen';
 import {
   MapPin,
   Send,
@@ -15,7 +17,7 @@ import {
 
 export const CecWorkspace: React.FC = () => {
   const {
-    cases,
+    dateScopedCases,
     selectedCecId,
     setSelectedCecId,
     cecSubmitReply
@@ -30,7 +32,7 @@ export const CecWorkspace: React.FC = () => {
   const currentCec = CEC_REGIONS.find(c => c.id === selectedCecId) || CEC_REGIONS[0];
 
   // Cases for this specific CEC
-  const cecCases = cases.filter(c => c.assignedCecId === selectedCecId);
+  const cecCases = dateScopedCases.filter(c => c.assignedCecId === selectedCecId);
 
   const handleOpenReplyModal = (c: CaseItem) => {
     setReplyingCase(c);
@@ -67,7 +69,8 @@ export const CecWorkspace: React.FC = () => {
           </div>
 
           {/* Switch CEC group */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <DateRangeFilter idPrefix="cec-date" />
             <span style={{ fontSize: '0.82rem', color: 'var(--thp-muted)' }}>สลับกลุ่ม CEC:</span>
             <select
               className="form-control"
@@ -119,6 +122,7 @@ export const CecWorkspace: React.FC = () => {
             <thead>
               <tr>
                 <th>Case ID / เลขพัสดุ</th>
+                <th>วันเวลาที่แจ้ง</th>
                 <th>ร้านค้า</th>
                 <th>สาขาปลายทาง & ผู้รับ</th>
                 <th>ปัญหา & รายละเอียดคำร้อง</th>
@@ -130,13 +134,13 @@ export const CecWorkspace: React.FC = () => {
             <tbody>
               {cecCases.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
                     ไม่มีเคสคงค้างในกลุ่ม {currentCec.code} ในขณะนี้
                   </td>
                 </tr>
               ) : (
                 cecCases.map(item => (
-                  <tr key={item.id}>
+                  <tr key={item.id} {...rowOpenProps(() => setSelectedCaseDetail(item))}>
                     <td>
                       <div className="tracking-pill">{item.trackingNumber}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '2px' }}>
@@ -144,6 +148,9 @@ export const CecWorkspace: React.FC = () => {
                         <EmailCountChip caseItem={item} />
                       </div>
                       <DuplicateChip caseItem={item} />
+                    </td>
+                    <td>
+                      <ReportedAtCell iso={item.createdAt} />
                     </td>
                     <td>
                       <div style={{ fontWeight: 600 }}>{item.companyName}</div>

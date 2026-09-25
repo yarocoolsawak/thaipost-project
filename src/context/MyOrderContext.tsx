@@ -3,6 +3,7 @@ import type { CaseItem, EmailPayload, IssueCategory, UrgencyLevel } from '../typ
 import { INITIAL_MYORDER_ORDERS, MYORDER_SHOPS, isShippedOrder } from '../data/myOrders';
 import type { MyOrder, MyOrderShop } from '../data/myOrders';
 import { useCases } from './CaseContext';
+import type { MyOrderCaseFilter } from '../components/myorder/caseFilters';
 
 export interface ReportIssueParams {
   category: IssueCategory;
@@ -52,6 +53,12 @@ interface MyOrderContextType {
   setSelectedShopId: (id: string) => void;
   currentShop: MyOrderShop;
   orders: MyOrder[];
+  // Cases visible on the MyOrder side: the current shop's cases for a merchant, every shop (or the picked shop) for MyOrder admin
+  myOrderCases: CaseItem[];
+  caseFilter: MyOrderCaseFilter;
+  setCaseFilter: (f: MyOrderCaseFilter) => void;
+  adminShopFilter: string; // 'ALL' or shop id
+  setAdminShopFilter: (id: string) => void;
   reportOrderIssue: (orderId: string, params: ReportIssueParams) => Promise<ReportIssueResult>;
   previewBulkReport: (trackingNumbers: string[]) => BulkLinePreview[];
   // newCaseFor: tracking numbers with an open case where the admin chose "create new" instead of following the old one
@@ -61,11 +68,22 @@ interface MyOrderContextType {
 const MyOrderContext = createContext<MyOrderContextType | undefined>(undefined);
 
 export const MyOrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { createCase, checkDuplicate, linkToExistingCase, sendOfficialEmail } = useCases();
+  const { role, dateScopedCases: cases, createCase, checkDuplicate, linkToExistingCase, sendOfficialEmail } = useCases();
   const [orders, setOrders] = useState<MyOrder[]>(INITIAL_MYORDER_ORDERS);
   const [selectedShopId, setSelectedShopId] = useState<string>(MYORDER_SHOPS[0].id);
 
+  const [caseFilter, setCaseFilter] = useState<MyOrderCaseFilter>('ALL');
+  const [adminShopFilter, setAdminShopFilter] = useState('ALL');
+
   const currentShop = MYORDER_SHOPS.find(s => s.id === selectedShopId) || MYORDER_SHOPS[0];
+
+  // Merchant: cases linked to the shop's orders (covers reports merged into another open case) or raised by the shop
+  const shopCaseIds = new Set(orders.filter(o => o.shopId === currentShop.id && o.caseId).map(o => o.caseId));
+  const myOrderCases = (
+    role === 'MERCHANT'
+      ? cases.filter(c => shopCaseIds.has(c.id) || c.myOrderRef.shopId === currentShop.id)
+      : cases.filter(c => adminShopFilter === 'ALL' || c.myOrderRef.shopId === adminShopFilter)
+  ).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   // Merchant reports a problem on a shipped order -> goes straight into the ThaiPost case system
   const reportOrderIssue = async (orderId: string, params: ReportIssueParams): Promise<ReportIssueResult> => {
@@ -163,6 +181,11 @@ export const MyOrderProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setSelectedShopId,
         currentShop,
         orders,
+        myOrderCases,
+        caseFilter,
+        setCaseFilter,
+        adminShopFilter,
+        setAdminShopFilter,
         reportOrderIssue,
         previewBulkReport,
         submitBulkReport

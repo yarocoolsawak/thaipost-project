@@ -30,7 +30,7 @@ export const TrackingTimeline: React.FC<TrackingTimelineProps> = ({ events, curr
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0.85rem', background: '#F8FAFC', borderRadius: '8px', border: '1px solid var(--thp-border)' }}>
-        <span style={{ fontSize: '0.82rem', color: 'var(--thp-muted)', fontWeight: 500 }}>สถานะปัจจุบันตาม Track & Trace:</span>
+        <span style={{ fontSize: '0.82rem', color: 'var(--thp-muted)', fontWeight: 500 }}>สถานะปัจจุบันตาม QMS:</span>
         <span style={{ fontSize: '0.88rem', fontWeight: 700, color: currentStatus.includes('สำเร็จ') ? '#059669' : 'var(--thp-red)' }}>
           {currentStatus}
         </span>

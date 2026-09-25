@@ -1341,3 +1341,32 @@ button, input, select, textarea {
   color: #FFFFFF;
   font-weight: 700;
 }
+
+/* Whole row / card opens the case detail */
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:focus-visible {
+  outline: 2px solid var(--thp-blue);
+  outline-offset: -2px;
+}
+
+.merchant-case-card.clickable-row:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Full text on hover (problem details) */
+.full-text-tip {
+  position: fixed;
+  z-index: 250;
+  background: var(--thp-dark);
+  color: #F8FAFC;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  white-space: pre-wrap;
+  pointer-events: none;
+}

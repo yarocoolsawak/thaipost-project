@@ -7,7 +7,8 @@ import { MYORDER_ORDER_STATUS_META, isShippedOrder, orderTotal } from '../../dat
 import { KNOWN_PARCELS } from '../../services/trackTraceApi';
 import { ReportIssueModal } from './ReportIssueModal';
 import { MerchantCaseDetailModal } from './MerchantCaseDetailModal';
-import { MerchantStatusBadge } from './CaseProgress';
+import { LatestUpdate } from './CaseProgress';
+import { rowOpenProps } from '../../utils/rowOpen';
 import { EmailDispatchModal } from './EmailDispatchModal';
 import { EmailCountChip } from '../common/CecAssignment';
 import { ShoppingBag, AlertTriangle, Link2, Package, Truck, CheckCircle2, Eye, Mail } from 'lucide-react';
@@ -151,7 +152,7 @@ export const MerchantOrders: React.FC = () => {
                   const statusMeta = MYORDER_ORDER_STATUS_META[order.orderStatus];
                   const canReport = isShippedOrder(order);
                   return (
-                    <tr key={order.orderId}>
+                    <tr key={order.orderId} {...(linkedCase ? rowOpenProps(() => setViewCase(linkedCase)) : {})}>
                       <td>
                         <div style={{ fontWeight: 700, fontFamily: 'var(--font-en)', whiteSpace: 'nowrap' }}>{order.orderId}</div>
                         <div className="case-id-sub">{new Date(order.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}</div>
@@ -193,7 +194,7 @@ export const MerchantOrders: React.FC = () => {
                         {linkedCase ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-start' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                              <MerchantStatusBadge status={linkedCase.status} />
+                              <LatestUpdate caseItem={linkedCase} compact />
                               <EmailCountChip caseItem={linkedCase} />
                             </div>
                             <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
@@ -263,11 +264,7 @@ export const MerchantOrders: React.FC = () => {
             const dupNote = caseItem.duplicateOfCaseId ? ` (เคสใหม่ แยกจากเคสเดิม ${caseItem.duplicateOfCaseId})` : '';
             const base = linkedToExisting
               ? `พัสดุนี้มีเคส ${caseItem.id} อยู่แล้ว ระบบแนบข้อมูลของคุณเข้าเคสเดิมเรียบร้อย`
-              : dupNote
-              ? `ส่งเรื่องเข้าระบบ ปณ. แล้ว (${caseItem.id})${dupNote}`
-              : caseItem.assignedCecId
-              ? `ส่งเรื่องเข้าระบบ ปณ. แล้ว (${caseItem.id}) และส่งตรงถึง CEC ${caseItem.assignedCecId} เรียบร้อย`
-              : `ส่งเรื่องเข้าระบบ ปณ. แล้ว (${caseItem.id}) — รอระบุ CEC เมื่อสถานะพัสดุอัปเดต`;
+              : `ส่งเรื่องถึงไปรษณีย์ไทยแล้ว (${caseItem.id})${dupNote} ติดตามอัปเดตได้ที่ "ติดตามปัญหาที่แจ้ง"`;
             setToast(emailSent ? `${base} • ส่งอีเมลคำร้องทางการแล้ว` : base);
           }}
         />

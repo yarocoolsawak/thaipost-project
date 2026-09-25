@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { CaseItem, UserRole, IssueCategory, UrgencyLevel, BranchContactLog, ActivityLog, ChatMessage, EmailPayload, OfficialEmailRecord, MyOrderActorRole } from '../types/case';
 import { EMAIL_REQUEST_TYPE_LABEL } from '../utils/emailTemplates';
+import { DEFAULT_DATE_FILTER, matchesDateFilter, type CaseDateFilter } from '../utils/dateFilter';
 import { INITIAL_CASES } from '../data/mockCases';
-import { CEC_REGIONS, resolveCecFromParcel } from '../data/cecRegions';
+import { resolveCecFromParcel } from '../data/cecRegions';
 import { fetchThaiPostTrackAndTrace, fetchTrackingUpdate } from '../services/trackTraceApi';
 
 export type TrackingSyncResult = 'NO_CHANGE' | 'UPDATED' | 'CEC_ASSIGNED';
@@ -36,6 +37,9 @@ interface CaseContextType {
   setStatusFilter: (s: string) => void;
   categoryFilter: string;
   setCategoryFilter: (c: string) => void;
+  dateFilter: CaseDateFilter; // by the date the case was reported
+  setDateFilter: (f: CaseDateFilter) => void;
+  dateScopedCases: CaseItem[]; // every case within the date filter (before role/status/search filters)
   
   selectedCase: CaseItem | null;
   setSelectedCase: (c: CaseItem | null) => void;
@@ -44,7 +48,6 @@ interface CaseContextType {
   createCase: (params: CreateCaseParams) => Promise<CaseItem>;
   checkDuplicate: (trackingNumber: string) => CaseItem | undefined;
   linkToExistingCase: (existingCaseId: string, newMessage: string, senderName: string, actorRole?: MyOrderActorRole) => void;
-  dispatchToCec: (caseId: string, cecId: number) => void;
   syncParcelTracking: (caseId: string) => Promise<TrackingSyncResult>;
   cecSubmitReply: (caseId: string, answer: string, branchNotes?: string, replierName?: string) => void;
   centralReviewAnswer: (
@@ -120,6 +123,7 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [dateFilter, setDateFilter] = useState<CaseDateFilter>(DEFAULT_DATE_FILTER);
   const [selectedCase, setSelectedCase] = useState<CaseItem | null>(null);
   // Running case number so several cases created at once (bulk report) never share an ID
   const caseSeq = useRef(INITIAL_CASES.length);
@@ -129,6 +133,7 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRoleState(next);
     setStatusFilter('ALL');
     setCategoryFilter('ALL');
+    setDateFilter(DEFAULT_DATE_FILTER);
   };
 
   // Check SLA violations every 30 seconds
@@ -209,7 +214,7 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
             actorName: 'ระบบ (Auto-Routing)',
             actorRole: 'CENTRAL',
             action: 'ส่งเคสตรงถึง CEC อัตโนมัติ',
-            details: `ระบุ ${assignedCec.code} จากรหัสไปรษณีย์ปลายทาง ${parcelInfo.destZipCode} และส่งเข้าคิว CEC ทันที`
+            details: `QMS ยืนยันพื้นที่ปลายทางแล้ว ระบุ ${assignedCec.code} จากรหัสไปรษณีย์ ${parcelInfo.destZipCode} และส่งเข้าคิว CEC ทันที`
           }
         : {
             id: `log-${Date.now() + 3}`,
@@ -217,7 +222,7 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
             actorName: 'ระบบ (Auto-Routing)',
             actorRole: 'CENTRAL',
             action: 'รอระบุ CEC ผู้รับผิดชอบ',
-            details: `สถานะพัสดุล่าสุด "${parcelInfo.currentPostalStatus}" ยังยืนยันพื้นที่ปลายทางไม่ได้ ระบบจะระบุ CEC อัตโนมัติเมื่อสถานะพัสดุอัปเดต`
+            details: `สถานะพัสดุใน QMS "${parcelInfo.currentPostalStatus}" ยังยืนยันพื้นที่ปลายทางไม่ได้ ระบบจะระบุ CEC อัตโนมัติเมื่อ QMS อัปเดตสถานะพัสดุ`
           },
       {
         id: `log-${Date.now()}`,
@@ -337,41 +342,8 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // Central assigns / reassigns a CEC (also used to fill in a blank CEC manually)
-  const dispatchToCec = (caseId: string, cecId: number) => {
-    const nowIso = new Date().toISOString();
-    const cec = CEC_REGIONS.find(r => r.id === cecId);
-    setCases(prev =>
-      prev.map(c => {
-        if (c.id !== caseId) return c;
-        const isReassign = c.assignedCecId !== undefined && c.assignedCecId !== cecId;
-        // Keep later-stage statuses (e.g. SLA exceeded / waiting review) when only swapping the CEC
-        const keepStatus = isReassign && !['NEW', 'CENTRAL_REVIEWING', 'PENDING_CEC_ASSIGNMENT'].includes(c.status);
-        return {
-          ...c,
-          status: keepStatus ? c.status : 'WAITING_CEC_REPLY',
-          assignedCecId: cecId,
-          assignedCecName: cec?.name,
-          dispatchedAt: c.dispatchedAt || nowIso,
-          activityLogs: [
-            {
-              id: `log-${Date.now()}`,
-              timestamp: nowIso,
-              actorName: 'เจ้าหน้าที่ ปณ.ส่วนกลาง',
-              actorRole: 'CENTRAL',
-              action: isReassign ? 'เปลี่ยน CEC ผู้รับผิดชอบ' : 'ระบุ CEC และส่งเคส',
-              details: isReassign
-                ? `ย้ายเคสจาก CEC ${c.assignedCecId} ไปยัง ${cec?.code || `CEC ${cecId}`}`
-                : `ส่งเคสไปยัง ${cec?.code || `CEC ${cecId}`} ประจำพื้นที่สาขาปลายทาง เพื่อตรวจสอบและประสานงาน`
-            },
-            ...c.activityLogs
-          ]
-        };
-      })
-    );
-  };
-
-  // Pull the latest Track & Trace status; fill in the CEC once the destination becomes known
+  // Pull the latest parcel status from QMS. The CEC is only ever set from QMS:
+  // once QMS confirms the destination area, the case is routed to that area's CEC (nobody assigns it by hand)
   const syncParcelTracking = async (caseId: string): Promise<TrackingSyncResult> => {
     const target = cases.find(c => c.id === caseId);
     if (!target) return 'NO_CHANGE';
@@ -390,9 +362,9 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
           {
             id: `log-${Date.now()}`,
             timestamp: nowIso,
-            actorName: 'ระบบ (Track & Trace API)',
+            actorName: 'ระบบ QMS',
             actorRole: 'CENTRAL',
-            action: 'อัปเดตสถานะพัสดุ',
+            action: 'QMS อัปเดตสถานะพัสดุ',
             details: `${latestEvent.status} @ ${latestEvent.location}: ${latestEvent.description}`
           }
         ];
@@ -403,7 +375,7 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
             actorName: 'ระบบ (Auto-Routing)',
             actorRole: 'CENTRAL',
             action: 'ระบุ CEC อัตโนมัติและส่งเคส',
-            details: `ยืนยันพื้นที่ปลายทางแล้ว ระบุ ${cec.code} จากรหัสไปรษณีย์ ${updatedParcel.destZipCode} และส่งเข้าคิว CEC`
+            details: `QMS ยืนยันพื้นที่ปลายทางแล้ว ระบุ ${cec.code} จากรหัสไปรษณีย์ ${updatedParcel.destZipCode} และส่งเข้าคิว CEC`
           });
         }
         return {
@@ -665,7 +637,9 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Filtered cases based on role and active search/status filters
-  const filteredCases = cases.filter(c => {
+  const dateScopedCases = cases.filter(c => matchesDateFilter(c.createdAt, dateFilter));
+
+  const filteredCases = dateScopedCases.filter(c => {
     // Role based scoping
     // (MERCHANT is scoped per shop inside its own views; MYORDER_ADMIN and CENTRAL see every case)
     if (role === 'CEC') {
@@ -703,15 +677,17 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   // Calculate live counts
+  // Counts follow the date filter so tab numbers match the list below them
+  const counted = dateScopedCases;
   const counts = {
-    total: cases.length,
-    newCases: cases.filter(c => c.status === 'NEW').length,
-    pendingCec: cases.filter(c => c.status === 'PENDING_CEC_ASSIGNMENT').length,
-    waitingCec: cases.filter(c => c.status === 'WAITING_CEC_REPLY' || c.status === 'SENT_TO_CEC').length,
-    waitingReview: cases.filter(c => c.status === 'WAITING_CENTRAL_REVIEW').length,
-    slaExceeded: cases.filter(c => c.status === 'SLA_EXCEEDED').length,
-    branchEscalated: cases.filter(c => c.status === 'CENTRAL_CONTACT_BRANCH').length,
-    closed: cases.filter(c => c.status === 'CLOSED').length
+    total: counted.length,
+    newCases: counted.filter(c => c.status === 'NEW').length,
+    pendingCec: counted.filter(c => c.status === 'PENDING_CEC_ASSIGNMENT').length,
+    waitingCec: counted.filter(c => c.status === 'WAITING_CEC_REPLY' || c.status === 'SENT_TO_CEC').length,
+    waitingReview: counted.filter(c => c.status === 'WAITING_CENTRAL_REVIEW').length,
+    slaExceeded: counted.filter(c => c.status === 'SLA_EXCEEDED').length,
+    branchEscalated: counted.filter(c => c.status === 'CENTRAL_CONTACT_BRANCH').length,
+    closed: counted.filter(c => c.status === 'CLOSED').length
   };
 
   return (
@@ -731,12 +707,14 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setStatusFilter,
         categoryFilter,
         setCategoryFilter,
+        dateFilter,
+        setDateFilter,
+        dateScopedCases,
         selectedCase,
         setSelectedCase,
         createCase,
         checkDuplicate,
         linkToExistingCase,
-        dispatchToCec,
         syncParcelTracking,
         cecSubmitReply,
         centralReviewAnswer,

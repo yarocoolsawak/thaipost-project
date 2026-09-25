@@ -5,22 +5,21 @@ import { SlaBadge } from '../common/SlaBadge';
 import { CaseDetailModal } from '../common/CaseDetailModal';
 import { AnswerReviewModal } from './AnswerReviewModal';
 import { BranchEscalationModal } from './BranchEscalationModal';
-import { DispatchCecModal } from './DispatchCecModal';
 import { CEC_REGIONS } from '../../data/cecRegions';
 import { exportCasesToExcel } from '../../utils/exportExcel';
 import { IssueDisplay } from '../common/IssueBadge';
-import { CecCell, DuplicateChip, EmailCountChip, OrderRefChip } from '../common/CecAssignment';
+import { DestinationCell, DuplicateChip, EmailCountChip, OrderRefChip, ReportedAtCell } from '../common/CecAssignment';
+import { DateRangeFilter } from '../common/DateRangeFilter';
+import { rowOpenProps } from '../../utils/rowOpen';
 import {
   Building2,
   Filter,
   CheckCircle2,
   PhoneForwarded,
-  Send,
   Eye,
   AlertTriangle,
   FileSpreadsheet,
-  RefreshCw,
-  Shuffle
+  RefreshCw
 } from 'lucide-react';
 
 export const CentralQueue: React.FC = () => {
@@ -38,7 +37,6 @@ export const CentralQueue: React.FC = () => {
   const [selectedCaseForDetail, setSelectedCaseForDetail] = useState<CaseItem | null>(null);
   const [reviewCase, setReviewCase] = useState<CaseItem | null>(null);
   const [escalateCase, setEscalateCase] = useState<CaseItem | null>(null);
-  const [dispatchCase, setDispatchCase] = useState<CaseItem | null>(null);
   const [cecFilter, setCecFilter] = useState<string>('ALL');
   const [syncingIds, setSyncingIds] = useState<string[]>([]);
   const [syncNotice, setSyncNotice] = useState('');
@@ -63,8 +61,8 @@ export const CentralQueue: React.FC = () => {
     const updated = results.filter(r => r !== 'NO_CHANGE').length;
     setSyncNotice(
       updated === 0
-        ? 'ยังไม่มีสถานะพัสดุใหม่จาก Track & Trace'
-        : `อัปเดตสถานะพัสดุ ${updated} เคส${assigned ? ` • ระบุ CEC อัตโนมัติ ${assigned} เคส` : ''}`
+        ? 'QMS ยังไม่มีสถานะพัสดุใหม่ — CEC ยังระบุไม่ได้'
+        : `QMS อัปเดตสถานะพัสดุ ${updated} เคส${assigned ? ` • ระบุ CEC อัตโนมัติ ${assigned} เคส` : ''}`
     );
   };
 
@@ -111,9 +109,9 @@ export const CentralQueue: React.FC = () => {
                 onClick={() => runSync(blankCecCases.map(c => c.id))}
                 disabled={syncingIds.length > 0}
                 style={{ fontWeight: 600, borderColor: '#FDBA74', color: '#C2410C', background: '#FFF7ED' }}
-                title="ดึงสถานะ Track & Trace ล่าสุด เพื่อระบุ CEC ให้เคสที่ยังว่างอยู่"
+                title="ดึงสถานะพัสดุล่าสุดจาก QMS — CEC จะถูกระบุอัตโนมัติเมื่อ QMS ยืนยันพื้นที่ปลายทาง"
               >
-                <RefreshCw size={15} /> {syncingIds.length > 0 ? 'กำลังซิงก์...' : `ซิงก์พัสดุ & ระบุ CEC (${blankCecCases.length})`}
+                <RefreshCw size={15} /> {syncingIds.length > 0 ? 'กำลังดึงข้อมูล...' : `ดึงสถานะจาก QMS (${blankCecCases.length})`}
               </button>
             )}
 
@@ -188,7 +186,7 @@ export const CentralQueue: React.FC = () => {
           </div>
 
           {/* Secondary Filters */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--thp-muted)' }}>
               <Filter size={14} />
               <span>CEC เขต:</span>
@@ -225,6 +223,8 @@ export const CentralQueue: React.FC = () => {
                 <option value="EXPEDITE_REQUEST">ขอเร่งนำส่ง</option>
               </select>
             </div>
+
+            <DateRangeFilter idPrefix="central-date" />
           </div>
         </div>
       </div>
@@ -236,6 +236,7 @@ export const CentralQueue: React.FC = () => {
             <thead>
               <tr>
                 <th>Case ID / เลขพัสดุ</th>
+                <th>วันเวลาที่แจ้ง</th>
                 <th>ร้านค้า / ผู้แจ้ง</th>
                 <th>ปลายทาง & กลุ่ม CEC</th>
                 <th>ปัญหา & รายละเอียดคำร้อง</th>
@@ -247,13 +248,13 @@ export const CentralQueue: React.FC = () => {
             <tbody>
               {displayCases.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
                     ไม่พบเคสที่ตรงกับเงื่อนไขการค้นหาหรือตัวกรอง
                   </td>
                 </tr>
               ) : (
                 displayCases.map(item => (
-                  <tr key={item.id}>
+                  <tr key={item.id} {...rowOpenProps(() => setSelectedCaseForDetail(item))}>
                     {/* Case & Tracking */}
                     <td>
                       <div className="tracking-pill">{item.trackingNumber}</div>
@@ -262,6 +263,9 @@ export const CentralQueue: React.FC = () => {
                         <EmailCountChip caseItem={item} />
                       </div>
                       <DuplicateChip caseItem={item} />
+                    </td>
+                    <td>
+                      <ReportedAtCell iso={item.createdAt} />
                     </td>
 
                     {/* Shop */}
@@ -273,10 +277,7 @@ export const CentralQueue: React.FC = () => {
 
                     {/* Destination & CEC */}
                     <td>
-                      <div style={{ fontWeight: 600, color: '#1E293B' }}>
-                        {item.assignedBranchName || item.parcelInfo.destPostOffice}
-                      </div>
-                      <CecCell caseItem={item} showHint />
+                      <DestinationCell caseItem={item} showHint />
                     </td>
 
                     {/* Category & Problem Details */}
@@ -329,52 +330,17 @@ export const CentralQueue: React.FC = () => {
                           </button>
                         )}
 
-                        {/* Action 3: CEC still blank -> sync tracking or assign manually */}
+                        {/* CEC still blank: it can only be filled from QMS parcel status, never by hand */}
                         {item.assignedCecId === undefined && item.status !== 'CLOSED' && (
-                          <>
-                            <button
-                              type="button"
-                              className="btn-secondary"
-                              style={{ padding: '0.35rem 0.55rem', fontSize: '0.78rem' }}
-                              onClick={() => runSync([item.id])}
-                              disabled={syncingIds.includes(item.id)}
-                              title="ดึงสถานะพัสดุล่าสุด (ระบบจะระบุ CEC ให้อัตโนมัติเมื่อยืนยันพื้นที่ปลายทาง)"
-                            >
-                              <RefreshCw size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-primary"
-                              style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
-                              onClick={() => setDispatchCase(item)}
-                            >
-                              <Send size={13} /> ระบุ CEC
-                            </button>
-                          </>
-                        )}
-
-                        {/* Legacy NEW cases that already have a suggested CEC */}
-                        {item.assignedCecId !== undefined && (item.status === 'NEW' || item.status === 'CENTRAL_REVIEWING') && (
-                          <button
-                            type="button"
-                            className="btn-primary"
-                            style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
-                            onClick={() => setDispatchCase(item)}
-                          >
-                            <Send size={13} /> ส่งเข้า CEC
-                          </button>
-                        )}
-
-                        {/* Central can move an in-progress case to another CEC */}
-                        {item.assignedCecId !== undefined && ['WAITING_CEC_REPLY', 'SENT_TO_CEC', 'SLA_EXCEEDED'].includes(item.status) && (
                           <button
                             type="button"
                             className="btn-secondary"
-                            style={{ padding: '0.35rem 0.55rem', fontSize: '0.78rem' }}
-                            onClick={() => setDispatchCase(item)}
-                            title="ย้ายเคสไปยัง CEC อื่น"
+                            style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
+                            onClick={() => runSync([item.id])}
+                            disabled={syncingIds.includes(item.id)}
+                            title="ดึงสถานะพัสดุล่าสุดจาก QMS (CEC ถูกระบุอัตโนมัติเมื่อ QMS ยืนยันพื้นที่ปลายทาง)"
                           >
-                            <Shuffle size={13} />
+                            <RefreshCw size={13} /> QMS
                           </button>
                         )}
 
@@ -411,10 +377,6 @@ export const CentralQueue: React.FC = () => {
             setSelectedCaseForDetail(null);
             setEscalateCase(c);
           }}
-          onOpenDispatchCec={c => {
-            setSelectedCaseForDetail(null);
-            setDispatchCase(c);
-          }}
         />
       )}
 
@@ -424,10 +386,6 @@ export const CentralQueue: React.FC = () => {
 
       {escalateCase && (
         <BranchEscalationModal caseItem={escalateCase} onClose={() => setEscalateCase(null)} />
-      )}
-
-      {dispatchCase && (
-        <DispatchCecModal caseItem={dispatchCase} onClose={() => setDispatchCase(null)} />
       )}
     </div>
   );

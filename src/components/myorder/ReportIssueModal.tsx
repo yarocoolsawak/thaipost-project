@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import type { CaseItem, EmailRequestType, IssueCategory, UrgencyLevel } from '../../types/case';
 import { useCases } from '../../context/CaseContext';
 import { DuplicateAlert } from '../common/DuplicateAlert';
+import { notify } from '../../utils/dialog';
 import type { MyOrder } from '../../data/myOrders';
 import { KNOWN_PARCELS } from '../../services/trackTraceApi';
-import { resolveCecFromParcel } from '../../data/cecRegions';
 import { useMyOrder } from '../../context/MyOrderContext';
 import type { ReportIssueResult } from '../../context/MyOrderContext';
 import { buildEmailDraft, DEFAULT_REQUEST_EMAIL_TO, EMAIL_REQUEST_TYPE_LABEL } from '../../utils/emailTemplates';
@@ -45,7 +45,6 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const parcel = order.trackingNumber ? KNOWN_PARCELS[order.trackingNumber] : undefined;
-  const cecPreview = parcel ? resolveCecFromParcel(parcel) : undefined;
 
   // Optional official request email sent together with the report
   const draftFor = (type: EmailRequestType, contact: string) =>
@@ -102,7 +101,7 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
       });
       onReported(result);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการแจ้งปัญหา');
+      notify(err instanceof Error ? err.message : 'แจ้งปัญหาไม่สำเร็จ ลองใหม่อีกครั้ง', { title: 'แจ้งปัญหาไม่สำเร็จ', tone: 'danger' });
     } finally {
       setIsSubmitting(false);
     }
@@ -155,20 +154,12 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
                 จะเปิดเป็นเคสใหม่แยกจากเคสเดิม <strong>{existingCase.id}</strong> (ระบบผูกให้ ปณ. เห็นว่าเป็นพัสดุเดียวกัน)
               </div>
             )}
-            {/* Routing preview */}
+            {/* What happens next (shops don't see internal routing / CEC) */}
             <div className="myorder-banner" style={{ justifyContent: 'flex-start', flexWrap: 'nowrap', alignItems: 'flex-start' }}>
               <Info size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-              {cecPreview ? (
-                <span>
-                  เรื่องจะถูกส่ง <strong>ตรงถึง {cecPreview.code}</strong> ({cecPreview.regionName}) ทันที
-                  โดย ปณ.ส่วนกลางและแอดมิน MyOrder ติดตามได้พร้อมกัน
-                </span>
-              ) : (
-                <span>
-                  พัสดุยังไม่ถึงพื้นที่ปลายทาง จึง<strong>ยังระบุ CEC ไม่ได้</strong> — เรื่องจะเข้าระบบ ปณ. ทันที
-                  และระบบจะระบุ CEC ให้อัตโนมัติเมื่อสถานะพัสดุอัปเดต
-                </span>
-              )}
+              <span>
+                เรื่องจะถูกส่งถึง<strong>ไปรษณีย์ไทย</strong>ทันที ติดตามอัปเดตล่าสุดได้ที่เมนู “ติดตามปัญหาที่แจ้ง”
+              </span>
             </div>
 
             <div className="form-grid-2">

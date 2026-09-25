@@ -70,3 +70,40 @@ export const CaseProgressStepper: React.FC<{ caseItem: CaseItem }> = ({ caseItem
     </div>
   );
 };
+
+// Most recent activity on a case — what a shop is allowed to see instead of the internal case status
+export const latestActivity = (c: CaseItem) =>
+  c.activityLogs.reduce<CaseItem['activityLogs'][number] | undefined>(
+    (latest, log) => (!latest || log.timestamp > latest.timestamp ? log : latest),
+    undefined
+  );
+
+export const LatestUpdate: React.FC<{ caseItem: CaseItem; compact?: boolean }> = ({ caseItem, compact = false }) => {
+  const log = latestActivity(caseItem);
+  if (!log) return null;
+  const when = new Date(log.timestamp).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' });
+  if (compact) {
+    return (
+      <div style={{ fontSize: '0.75rem', lineHeight: 1.35 }}>
+        <div style={{ fontWeight: 600, color: 'var(--myorder-teal-dark)' }}>{log.action}</div>
+        <div style={{ color: 'var(--thp-muted)' }}>อัปเดต {when}</div>
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        borderLeft: '3px solid var(--myorder-teal)',
+        background: 'var(--myorder-teal-light)',
+        borderRadius: '0 8px 8px 0',
+        padding: '0.5rem 0.8rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.1rem'
+      }}
+    >
+      <span style={{ fontSize: '0.72rem', color: 'var(--thp-muted)' }}>อัปเดตล่าสุด • {when}</span>
+      <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--myorder-teal-dark)' }}>{log.action}</span>
+    </div>
+  );
+};

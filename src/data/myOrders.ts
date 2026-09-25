@@ -1,3 +1,5 @@
+import { hoursAgo } from './demoClock';
+
 // Mock data simulating the MyOrder merchant platform integration.
 // In production these would come from the MyOrder API (orders created by each shop).
 
@@ -52,8 +54,6 @@ export const isShippedOrder = (o: MyOrder) =>
 
 export const orderTotal = (o: MyOrder) => o.items.reduce((sum, i) => sum + i.qty * i.price, 0);
 
-const now = new Date('2026-09-23T11:00:00+07:00');
-const hoursAgo = (h: number) => new Date(now.getTime() - h * 3600 * 1000).toISOString();
 
 export const INITIAL_MYORDER_ORDERS: MyOrder[] = [
   {

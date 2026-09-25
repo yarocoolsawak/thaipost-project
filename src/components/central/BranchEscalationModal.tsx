@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { CaseItem } from '../../types/case';
 import { useCases } from '../../context/CaseContext';
+import { notify } from '../../utils/dialog';
 import { PhoneForwarded, X, Save, AlertTriangle } from 'lucide-react';
 
 interface BranchEscalationModalProps {
@@ -28,7 +29,7 @@ export const BranchEscalationModal: React.FC<BranchEscalationModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!officerName.trim() || !outcome.trim()) {
-      alert('กรุณากรอกชื่อผู้รับสายและผลการประสานงานให้ครบถ้วน');
+      notify('กรุณากรอกชื่อผู้รับสายและผลการประสานงานให้ครบถ้วน', { title: 'ข้อมูลยังไม่ครบ' });
       return;
     }
 

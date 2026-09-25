@@ -1,5 +1,7 @@
 import React from 'react';
 import { useCases } from '../../context/CaseContext';
+import { useMyOrder } from '../../context/MyOrderContext';
+import { MYORDER_CASE_FILTERS, matchesCaseFilter } from '../myorder/caseFilters';
 import {
   Inbox,
   BarChart3,
@@ -36,6 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setStatusFilter,
     counts
   } = useCases();
+  const { myOrderCases, caseFilter, setCaseFilter } = useMyOrder();
   const sentEmailCount = cases.reduce((sum, c) => sum + (c.emails?.length || 0), 0);
 
   // MyOrder side has its own, simpler navigation
@@ -74,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <div className="nav-item-left">
                   <ClipboardList size={18} />
-                  <span>ติดตามสถานะปัญหา</span>
+                  <span>ติดตามปัญหาที่แจ้ง</span>
                 </div>
               </button>
             </>
@@ -105,13 +108,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
+        {/* Status Filters: MyOrder admin only — shops never see internal case statuses */}
+        {role === 'MYORDER_ADMIN' && (
+        <div className="sidebar-card">
+          <div className="sidebar-title">สถานะเคส (Filter by Status)</div>
+          {MYORDER_CASE_FILTERS.map(f => {
+            const count = myOrderCases.filter(c => matchesCaseFilter(c, f.key)).length;
+            const showBadge = !f.badge || count > 0;
+            return (
+              <button
+                key={f.key}
+                type="button"
+                className={`nav-item-btn ${currentTab === 'CASES' && caseFilter === f.key ? 'active' : ''}`}
+                onClick={() => {
+                  setCaseFilter(f.key);
+                  setCurrentTab('CASES');
+                }}
+              >
+                <div className="nav-item-left">
+                  {f.icon}
+                  <span style={f.key === 'SLA' ? { color: 'var(--thp-danger)', fontWeight: 600 } : undefined}>{f.label}</span>
+                </div>
+                {showBadge && <span className={`count-badge ${f.badge || ''}`}>{count}</span>}
+              </button>
+            );
+          })}
+        </div>
+        )}
+
         <div className="sidebar-card" style={{ fontSize: '0.78rem', color: 'var(--thp-slate)', lineHeight: 1.55 }}>
           <div className="sidebar-title">ขั้นตอนการแจ้งปัญหา</div>
           <div>1. ร้านค้ากด “แจ้งปัญหา” ที่คำสั่งซื้อที่จัดส่งแล้ว</div>
           <div>2. เรื่องเข้าระบบ ปณ. และส่งตรงถึง CEC ปลายทาง</div>
           <div style={{ display: 'flex', gap: '0.3rem' }}>
             <HelpCircle size={13} style={{ flexShrink: 0, marginTop: 3, color: '#C2410C' }} />
-            <span>ถ้าพัสดุยังไม่ถึงปลายทาง CEC จะว่างไว้ก่อน และระบุอัตโนมัติเมื่อสถานะพัสดุอัปเดต</span>
+            <span>CEC ระบุจากสถานะพัสดุในระบบ QMS เท่านั้น ถ้าพัสดุยังไม่ถึงปลายทาง CEC จะว่างไว้ก่อน</span>
           </div>
           <div>3. ร้านค้า แอดมิน MyOrder และ ปณ.ส่วนกลาง เห็นสถานะเดียวกัน</div>
         </div>

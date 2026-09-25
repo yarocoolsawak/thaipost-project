@@ -175,7 +175,7 @@ export function getCecByZipCodeOrProvince(zipCode: string, province?: string): C
   return findCecByZipCodeOrProvince(zipCode, province) || CEC_REGIONS[0];
 }
 
-// Track & Trace statuses that confirm the parcel has reached (or been handled by) its destination area
+// QMS parcel statuses that confirm the parcel has reached (or been handled by) its destination area
 const DESTINATION_CONFIRMED_STATUSES = [
   'ถึงศูนย์คัดแยกปลายทาง',
   'ถึงที่ทำการปลายทาง',
@@ -191,7 +191,8 @@ export function isDestinationConfirmed(parcel: ParcelInfo): boolean {
 /**
  * Decide which CEC owns a case from the live parcel status.
  * While the parcel is still in transit / misrouted we cannot tell which CEC should handle it,
- * so the case stays blank until a later Track & Trace update confirms the destination.
+ * so the case stays blank until a later QMS status update confirms the destination.
+ * This is the only way a case gets its CEC — staff cannot pick or change it by hand.
  */
 export function resolveCecFromParcel(parcel: ParcelInfo): CecInfo | undefined {
   if (!isDestinationConfirmed(parcel)) return undefined;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { CaseItem } from '../../types/case';
 import { useCases } from '../../context/CaseContext';
+import { confirmDialog } from '../../utils/dialog';
 import { SlaBadge } from './SlaBadge';
 import { TrackingTimeline } from './TrackingTimeline';
 import { DuplicateChip, OrderRefChip } from './CecAssignment';
@@ -26,15 +27,13 @@ interface CaseDetailModalProps {
   onClose: () => void;
   onOpenReviewAnswer?: (caseItem: CaseItem) => void;
   onOpenEscalateBranch?: (caseItem: CaseItem) => void;
-  onOpenDispatchCec?: (caseItem: CaseItem) => void;
 }
 
 export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
   caseItem: initialCaseItem,
   onClose,
   onOpenReviewAnswer,
-  onOpenEscalateBranch,
-  onOpenDispatchCec
+  onOpenEscalateBranch
 }) => {
   const { role, addChatMessage, closeCase, cases } = useCases();
   const caseItem = cases.find(c => c.id === initialCaseItem.id) || initialCaseItem;
@@ -61,8 +60,13 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
     setNewChatText('');
   };
 
-  const handleCloseCaseAction = () => {
-    if (window.confirm(`ต้องการปิดเคส ${caseItem.id} ใช่หรือไม่?`)) {
+  const handleCloseCaseAction = async () => {
+    const ok = await confirmDialog(`ต้องการปิดเคส ${caseItem.id} ใช่หรือไม่?`, {
+      title: 'ปิดเคส',
+      confirmLabel: 'ปิดเคส',
+      tone: 'success'
+    });
+    if (ok) {
       closeCase(caseItem.id, 'เจ้าหน้าที่ตรวจสอบและดำเนินการปิดเคสเรียบร้อย');
       onClose();
     }
@@ -127,7 +131,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             className={`status-tab-btn ${activeTab === 'TRACKING' ? 'active' : ''}`}
             onClick={() => setActiveTab('TRACKING')}
           >
-            <Truck size={15} /> Track & Trace API ({caseItem.parcelInfo.events?.length || 0})
+            <Truck size={15} /> สถานะพัสดุ QMS ({caseItem.parcelInfo.events?.length || 0})
           </button>
           <button
             type="button"
@@ -320,7 +324,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                   }}
                 >
                   <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--thp-dark)' }}>
-                    ข้อมูลพัสดุ ปณท (API Integration)
+                    ข้อมูลพัสดุ ปณท (จากระบบ QMS)
                   </div>
                   <div
                     style={{
@@ -344,7 +348,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
                     <span style={{ color: 'var(--thp-muted)' }}>กลุ่ม CEC ที่ดูแล:</span>
                     <span style={{ color: '#4338CA', fontWeight: 600 }}>
-                      {caseItem.assignedCecName || 'รอระบุ CEC (สถานะพัสดุยังไม่ยืนยันปลายทาง)'}
+                      {caseItem.assignedCecName || 'รอระบุ CEC (รอ QMS ยืนยันพื้นที่ปลายทาง)'}
                     </span>
 
                     <span style={{ color: 'var(--thp-muted)' }}>ผู้เซ็นรับ (POD):</span>
@@ -805,19 +809,6 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           {/* Central Role Actions */}
           {role === 'CENTRAL' && (
             <>
-              {(caseItem.status === 'NEW' ||
-                caseItem.status === 'CENTRAL_REVIEWING' ||
-                (caseItem.assignedCecId === undefined && caseItem.status !== 'CLOSED')) &&
-                onOpenDispatchCec && (
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => onOpenDispatchCec(caseItem)}
-                >
-                  <Send size={15} /> {caseItem.assignedCecId === undefined ? 'ระบุ CEC ผู้รับผิดชอบ' : 'ส่งงานเข้า CEC 14 กลุ่ม'}
-                </button>
-              )}
-
               {caseItem.status === 'WAITING_CENTRAL_REVIEW' && onOpenReviewAnswer && (
                 <button
                   type="button"

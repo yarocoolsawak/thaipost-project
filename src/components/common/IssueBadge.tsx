@@ -1,5 +1,6 @@
 import React from 'react';
 import type { IssueCategory, UrgencyLevel } from '../../types/case';
+import { TruncatedText } from './TruncatedText';
 import { Clock, AlertTriangle, HelpCircle, PackageX, Compass, AlertCircle, Zap } from 'lucide-react';
 
 interface IssueCategoryMeta {
@@ -141,24 +142,13 @@ export const IssueDisplay: React.FC<IssueDisplayProps> = ({
         )}
       </div>
 
-      {/* Specific problem description (customer inquiry) */}
+      {/* Specific problem description (customer inquiry): full text on hover */}
       {inquiry && (
-        <div
-          style={{
-            fontSize: '0.8rem',
-            color: 'var(--thp-dark)',
-            lineHeight: 1.35,
-            fontWeight: 500,
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}
-          title={inquiry}
-        >
-          {inquiry}
-        </div>
+        <TruncatedText
+          text={inquiry}
+          lines={2}
+          style={{ fontSize: '0.8rem', color: 'var(--thp-dark)', lineHeight: 1.35, fontWeight: 500 }}
+        />
       )}
     </div>
   );

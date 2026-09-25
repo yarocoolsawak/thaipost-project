@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CaseItem } from '../../types/case';
-import { MerchantStatusBadge } from '../myorder/CaseProgress';
+import { latestActivity } from '../myorder/CaseProgress';
 import { AlertTriangle, Eye, PlusCircle } from 'lucide-react';
 
 interface DuplicateAlertProps {
@@ -11,7 +11,7 @@ interface DuplicateAlertProps {
 
 // Shown when a parcel already has a case that is not closed yet: follow that case, or open a new one anyway
 export const DuplicateAlert: React.FC<DuplicateAlertProps> = ({ existingCase, onFollowExisting, onCreateNew }) => {
-  const lastUpdate = existingCase.activityLogs[0];
+  const lastUpdate = latestActivity(existingCase);
   return (
     <div className="duplicate-alert-banner">
       <AlertTriangle size={24} style={{ flexShrink: 0, marginTop: '2px', color: '#D97706' }} />
@@ -20,13 +20,9 @@ export const DuplicateAlert: React.FC<DuplicateAlertProps> = ({ existingCase, on
           เลขพัสดุนี้เคยสร้างเคสแล้ว และเคสยังไม่ปิด
         </div>
         <div style={{ fontSize: '0.84rem', color: '#B45309', lineHeight: 1.5, display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-            เคส <strong>{existingCase.id}</strong>
-            <MerchantStatusBadge status={existingCase.status} />
-          </div>
           <div>
-            แจ้งเมื่อ {new Date(existingCase.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} • ร้าน{' '}
-            {existingCase.companyName} • ดูแลโดย {existingCase.assignedCecName || 'รอระบุ CEC'}
+            เคส <strong>{existingCase.id}</strong> • แจ้งเมื่อ{' '}
+            {new Date(existingCase.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
           </div>
           {lastUpdate && (
             <div>

@@ -13,6 +13,7 @@ import { MerchantCaseTracking } from './components/myorder/MerchantCaseTracking'
 import { MyOrderAdminMonitor } from './components/myorder/MyOrderAdminMonitor';
 import { MyOrderEmailLog } from './components/myorder/MyOrderEmailLog';
 import { BulkReportModal } from './components/myorder/BulkReportModal';
+import { AppDialogHost } from './components/common/AppDialogHost';
 
 const MainContent: React.FC = () => {
   const { role } = useCases();
@@ -63,6 +64,9 @@ const MainContent: React.FC = () => {
       </div>
 
       {isBulkReportOpen && role === 'MYORDER_ADMIN' && <BulkReportModal onClose={() => setIsBulkReportOpen(false)} />}
+
+      {/* Notices and confirmations (replaces window.alert / window.confirm) */}
+      <AppDialogHost />
     </div>
   );
 };
