@@ -1,5 +1,6 @@
 import React from 'react';
 import type { CaseItem } from '../../types/case';
+import { formatPostalStatus } from './StatusBadge';
 import { HelpCircle, ShoppingBag, Mail, Copy } from 'lucide-react';
 
 // CEC column: shows the assigned CEC, or a blank placeholder until the destination is confirmed
@@ -12,7 +13,7 @@ export const CecCell: React.FC<{ caseItem: CaseItem; showHint?: boolean }> = ({ 
         </span>
         {showHint && (
           <span style={{ fontSize: '0.68rem', color: 'var(--thp-muted)' }}>
-            พัสดุ: {caseItem.parcelInfo.currentPostalStatus}
+            พัสดุ: {formatPostalStatus(caseItem.parcelInfo.currentPostalStatus)}
           </span>
         )}
       </div>

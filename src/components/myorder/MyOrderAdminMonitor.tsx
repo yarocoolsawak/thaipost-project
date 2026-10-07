@@ -162,7 +162,15 @@ export const MyOrderAdminMonitor: React.FC<MyOrderAdminMonitorProps> = ({ onOpen
                       <MerchantStatusBadge status={c.status} />
                     </td>
                     <td>
-                      <SlaBadge deadlineIso={c.slaDeadline} isExceeded={c.isSlaExceeded} status={c.status} />
+                      <SlaBadge
+                        deadlineIso={c.slaDeadline}
+                        isExceeded={c.isSlaExceeded}
+                        status={c.status}
+                        bagOpenedAt={c.bagOpenedAt || c.parcelInfo?.bagOpenedAt}
+                        targetDays={c.slaTargetDays}
+                        routeType={c.slaRouteType}
+                        retentionDeadline={c.retentionDeadline}
+                      />
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '0.35rem' }}>

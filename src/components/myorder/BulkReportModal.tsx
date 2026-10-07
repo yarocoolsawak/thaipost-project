@@ -14,7 +14,10 @@ interface BulkReportModalProps {
 }
 
 const DEFAULT_MESSAGES: Partial<Record<IssueCategory, string>> = {
-  EXPEDITE_REQUEST: 'ขอเร่งรัดการนำส่งพัสดุ ลูกค้าปลายทางติดตามเร่งด่วน รบกวนประสานสาขาปลายทางจัดรอบนำจ่ายให้เร็วที่สุด',
+  EXPEDITE_REQUEST: 'รบกวนประสานงานเจ้าหน้าที่เร่งนำส่งให้หน่อยนะครับ ลูกค้ามีความจำเป็นต้องใช้งานด่วน',
+  CLOSE_WORK_REQUEST: 'รบกวนประสานงานเจ้าหน้าที่ตรวจสอบปิดงานให้หน่อยนะครับ ร้านค้าสอบถามผู้รับปลายทางแจ้งได้รับพัสดุเรียบร้อยแล้ว สถานะยังไม่อัปเดตปิดงานครับ',
+  REDELIVERY_REQUEST: 'รบกวนประสานงานเจ้าหน้าที่ติดต่อนำส่งใหม่ให้หน่อยนะครับ ร้านค้าสอบถามผู้รับแจ้งว่ายังไม่ได้รับการติดต่อจากเจ้าหน้าที่ครับ',
+  RETURN_OR_REVERSE: 'รบกวนประสานงานเจ้าหน้าที่ตรวจสอบถอยสถานะตีกลับและแจ้งนำส่งใหม่ให้หน่อยนะครับ พัสดุถูกส่งคืนต้นทางโดยยังไม่มีการนำจ่ายครับ',
   DELAYED_DELIVERY: 'พัสดุล่าช้ากว่ากำหนด สถานะไม่อัปเดต รบกวนตรวจสอบตำแหน่งพัสดุ',
   NOT_RECEIVED: 'สถานะขึ้นนำจ่ายสำเร็จ แต่ผู้รับแจ้งว่ายังไม่ได้รับของ รบกวนตรวจสอบหลักฐานการนำจ่าย'
 };
@@ -234,8 +237,8 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
                     <div className="form-group">
                       <label>ประเภทคำร้อง:</label>
                       <select className="form-control" value={category} onChange={e => handleCategoryChange(e.target.value as IssueCategory)}>
-                        {(['EXPEDITE_REQUEST', 'DELAYED_DELIVERY', 'NOT_RECEIVED', 'CANNOT_LOCATE', 'OTHER'] as IssueCategory[]).map(c => (
-                          <option key={c} value={c}>{ISSUE_CATEGORY_META[c].label}</option>
+                        {(['EXPEDITE_REQUEST', 'CLOSE_WORK_REQUEST', 'REDELIVERY_REQUEST', 'RETURN_OR_REVERSE', 'DELAYED_DELIVERY', 'NOT_RECEIVED', 'OTHER'] as IssueCategory[]).map(c => (
+                          <option key={c} value={c}>{ISSUE_CATEGORY_META[c]?.label || c}</option>
                         ))}
                       </select>
                     </div>

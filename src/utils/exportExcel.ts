@@ -18,6 +18,8 @@ export async function exportCasesToExcel(cases: CaseItem[], filenamePrefix = 'Th
   const headers = [
     'Case ID',
     'หมายเลขพัสดุ (Tracking No)',
+    'รหัสสถานะ THP (Code)',
+    'สถานะพัสดุ THP/QMS',
     'ร้านค้า (MyOrder)',
     'ผู้แจ้งเรื่อง',
     'เลขคำสั่งซื้อ MyOrder',
@@ -27,10 +29,15 @@ export async function exportCasesToExcel(cases: CaseItem[], filenamePrefix = 'Th
     'รายละเอียดปัญหา/คำร้อง',
     'ระดับความเร่งด่วน',
     'สถานะเคส',
-    'จำนวนอีเมลคำร้องที่ส่ง',
     'วันเวลาที่สร้าง',
-    'กำหนด SLA 3 วัน',
+    'วันเปิดถุง (นับ SLA)',
+    'เส้นทาง & เกณฑ์ SLA',
+    'กำหนดส่งตาม SLA',
     'เกิน SLA หรือไม่',
+    'SLA เก็บพัสดุ 7 วัน',
+    'การโทรติดต่อผู้รับ (จนท. 3 + แอดมิน 1)',
+    'หลักฐานภาพถ่าย POD',
+    'คอนเฟิร์มผู้รับปลายทาง',
     'คำตอบล่าสุด (Approved Answer)',
     'ผลการโทรติดต่อสาขา (Branch Outcome)'
   ];
@@ -40,11 +47,22 @@ export async function exportCasesToExcel(cases: CaseItem[], filenamePrefix = 'Th
     const approvedAnswer = c.centralReview?.approvedAnswer || c.cecReply?.answer || '-';
     const isExceeded = c.isSlaExceeded ? 'เกินกำหนด' : 'อยู่ในเกณฑ์';
     const categoryTh = ISSUE_CATEGORY_META[c.category]?.label || c.category;
-    const emailCount = `${c.emails?.length || 0} ฉบับ`;
+    const bagOpenedDate = c.bagOpenedAt ? new Date(c.bagOpenedAt).toLocaleString('th-TH') : '-';
+    const routeRule = c.slaTargetDays === 5 ? 'ข้ามจังหวัด (3-5 วัน)' : 'กทม./ภาคเดียวกัน (3 วัน)';
+    const retentionDate = c.retentionDeadline ? new Date(c.retentionDeadline).toLocaleString('th-TH') : '-';
+    const callsSummary = c.callAttempts && c.callAttempts.length > 0
+      ? `โทรแล้ว ${c.callAttempts.length}/4 ครั้ง (ล่าสุด: ${c.callAttempts[c.callAttempts.length - 1].outcomeLabel})`
+      : 'ยังไม่มีบันทึกโทร';
+    const podStatus = (c.deliveryProofPhotoUrl || c.parcelInfo?.deliveryProofPhotoUrl) ? 'มีภาพหลักฐาน (POD)' : 'ไม่มีภาพ';
+    const recipientConfirmed = c.recipientConfirmedReceived ? 'ยืนยันได้รับจริง' : 'ยังไม่ได้คอนเฟิร์ม';
+    const thpStatusCode = c.parcelInfo?.currentStatusCode || '-';
+    const thpPostalStatus = c.parcelInfo?.currentPostalStatus || '-';
 
     return [
       c.id,
       c.trackingNumber,
+      thpStatusCode,
+      thpPostalStatus.replace(/"/g, '""'),
       c.companyName,
       c.contactPerson,
       c.myOrderRef.orderId,
@@ -54,10 +72,15 @@ export async function exportCasesToExcel(cases: CaseItem[], filenamePrefix = 'Th
       (c.customerInquiry || '-').replace(/"/g, '""'),
       c.urgency,
       c.status,
-      emailCount,
       new Date(c.createdAt).toLocaleString('th-TH'),
+      bagOpenedDate,
+      routeRule,
       new Date(c.slaDeadline).toLocaleString('th-TH'),
       isExceeded,
+      retentionDate,
+      callsSummary,
+      podStatus,
+      recipientConfirmed,
       approvedAnswer.replace(/"/g, '""'),
       branchOutcome.replace(/"/g, '""')
     ];

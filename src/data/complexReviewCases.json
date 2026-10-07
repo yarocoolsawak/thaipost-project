@@ -1,0 +1,873 @@
+[
+  {
+    "case_id": "REV-2026-1001",
+    "tracking_no": "ED992014001TH",
+    "case_name": "สถานะสำเร็จแต่ส่งผิดบ้าน (Misdelivery with Forged/Mismatched Photo)",
+    "case_type": "CLOSE_WORK_REQUEST",
+    "review_complexity": "VERY_HIGH",
+    "urgency_level": "CRITICAL",
+    "origin_province": "กรุงเทพมหานคร",
+    "destination_province": "นนทบุรี",
+    "destination_area_type": "BANGKOK",
+    "bag_opened_at": "2026-10-04T08:30:00+07:00",
+    "latest_status": "501 - นำจ่ายสำเร็จ",
+    "latest_status_at": "2026-10-06T17:45:00+07:00",
+    "issue_message": "ร้านค้าขอกดปิดงานเพราะระบบขึ้นนำจ่ายสำเร็จ แต่ผู้รับส่งรูปกล้องวงจรปิดมายืนยันว่าไม่มีเจ้าหน้าที่มาส่ง และรูปถ่ายในระบบเป็นบ้านรั้วสีดำ ทั้งที่บ้านผู้รับเป็นรั้วสีขาว",
+    "conflicting_parties": "บุรุษไปรษณีย์ (อ้างว่าส่งแล้ว) VS ผู้รับ (ยืนยันส่งผิดบ้าน) VS ร้านค้า (ต้องการรีบปิดเคสรับเงิน)",
+    "investigation_checklist": [
+      {
+        "item": "ตรวจรูปภาพหลักฐาน POD เทียบกับภาพถ่ายหน้าบ้านจริงของผู้รับ",
+        "status": "FAILED",
+        "finding": "รูปใน POD เป็นรั้วเหล็กดัดสีดำ แต่บ้านเลขที่จริงของผู้รับเป็นรั้วสแตนเลสสีขาว คนละบ้านชัดเจน"
+      },
+      {
+        "item": "ตรวจสอบพิกัด GPS จุดที่เครื่อง Handheld Scanner ยิงปิดสถานะ 501",
+        "status": "FAILED",
+        "finding": "พิกัดสแกนอยู่ที่ ซอยติวานนท์ 24 แยก 8 ห่างจากบ้านผู้รับ (แยก 2) ประมาณ 420 เมตร"
+      },
+      {
+        "item": "ตรวจสอบชื่อผู้เซ็นรับในระบบ",
+        "status": "SUSPICIOUS",
+        "finding": "เซ็นว่า 'รับไว้เอง' ไม่มีชื่อ-สกุล และลายเซ็นเป็นขีดเดียว"
+      },
+      {
+        "item": "ตรวจสอบประวัติการโทรของบุรุษไปรษณีย์ในรอบนำจ่าย",
+        "status": "FAILED",
+        "finding": "ไม่มีบันทึกการโทรหาผู้รับเลยแม้แต่ครั้งเดียว (0 ครั้ง)"
+      }
+    ],
+    "delivery_attempt_count": 1,
+    "proof_of_delivery": "UNCLEAR",
+    "recipient_name": "นางสาวพัชราภรณ์ วิริยะกุล",
+    "signed_by": "รับไว้เอง (ขีดเดียว)",
+    "contact_attempt_count": 2,
+    "contact_history": [
+      {
+        "attempt_no": 1,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T08:30:00+07:00",
+        "phone_number": "081-xxx-1199",
+        "result": "CONNECTED",
+        "note": "โทรหาผู้รับ ยืนยันรั้วบ้านสีขาว และส่งคลิปกล้องวงจรปิดทั้งวันให้ดูว่าไม่มีรถ ปณ. เข้ามา"
+      },
+      {
+        "attempt_no": 2,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T09:15:00+07:00",
+        "phone_number": "02-xxx-4567",
+        "result": "CONNECTED",
+        "note": "โทรหาหัวหน้างานนำจ่าย ปณ.นนทบุรี แจ้งพิกัด GPS ผิดซอย สาขารับปากจะตามตัว จนท. ไปเก็บกู้"
+      }
+    ],
+    "sla_type": "STANDARD_3DAYS",
+    "sla_due_at": "2026-10-07T08:30:00+07:00",
+    "sla_status": "EXCEEDED",
+    "cec_group": "CEC 1 (กทม./สมุทรปราการ/นนทบุรี)",
+    "cec_status": "NOT_SENT",
+    "branch_contact_status": "BRANCH_INVESTIGATING",
+    "customer_contact_required": "NO",
+    "recommended_next_action": "ปฏิเสธการปิดเคสทันที ออกคำสั่ง 'ดึงพัสดุคืนจากบ้านผิดและนำจ่ายใหม่' (RETRIEVE_AND_REDELIVER) ให้หัวหน้างาน ปณ.นนทบุรี ลงพื้นที่พร้อมบุรุษไปรษณีย์เก็บกู้พัสดุมาส่งบ้านที่ถูกต้องก่อน 14:00 น. วันนี้",
+    "possible_actions": [
+      "CALL_DESTINATION_BRANCH",
+      "KEEP_OPEN",
+      "REQUEST_MORE_INFO",
+      "REDELIVERY"
+    ],
+    "hidden_actions": [
+      "REPLY_AND_CLOSE",
+      "REVERSE_RETURN_STATUS",
+      "REVIEW_RETURN"
+    ],
+    "verification_required": "ต้องได้รูปถ่าย POD ใหม่ที่แสดงหน้าบ้านรั้วสีขาวของผู้รับตัวจริงพร้อมลายเซ็นระบุชื่อชัดเจน",
+    "final_reply": "ไม่สามารถปิดงานได้เนื่องจากตรวจสอบพบการนำจ่ายผิดบ้าน (พิกัด GPS คลาดเคลื่อนและรูปถ่ายไม่ตรงกับบ้านจริง) ทางศูนย์ได้สั่งการให้ ปณ.นนทบุรี ไปเก็บพัสดุคืนและนำมาส่งมอบให้คุณพัชราภรณ์โดยด่วนที่สุดครับ",
+    "close_case": "NO",
+    "close_reason": "มีการนำจ่ายผิดบ้านชัดเจน อยู่ระหว่างติดตามเก็บกู้พัสดุ",
+    "risk_or_exception_note": "ความเสี่ยง Misdelivery สูง หากบ้านที่รับผิดเปิดกล่องหรือทำของหาย ไปรษณีย์ไทยต้องเป็นผู้รับผิดชอบชดใช้เต็มจำนวน"
+  },
+  {
+    "case_id": "REV-2026-1002",
+    "tracking_no": "ED992014002TH",
+    "case_name": "ตีกลับผิดระเบียบใน 45 นาที (Fake Refusal / Unauthorized Return)",
+    "case_type": "RETURN_REQUEST",
+    "review_complexity": "VERY_HIGH",
+    "urgency_level": "CRITICAL",
+    "origin_province": "เชียงใหม่",
+    "destination_province": "สุราษฎร์ธานี",
+    "destination_area_type": "CROSS_PROVINCE",
+    "bag_opened_at": "2026-10-05T08:00:00+07:00",
+    "latest_status": "304 - ส่งคืนต้นทาง (ตีกลับ)",
+    "latest_status_at": "2026-10-06T10:00:00+07:00",
+    "issue_message": "ร้านค้าโวยวายหนักมาก สินค้าพรีออเดอร์ 15,000 บาท ถูกคีย์ว่า 'ผู้รับปฏิเสธ' และยิงส่งคืนภายในเวลาไม่ถึง 1 ชั่วโมงหลังออกนำจ่าย ผู้รับยืนยันมีกล้องวงจรปิดว่าไม่มีใครมาส่ง",
+    "conflicting_parties": "บุรุษไปรษณีย์ ปณ.เกาะสมุย (คีย์ว่าผู้รับปฏิเสธ) VS ผู้รับ (รอรับของอยู่บ้าน) VS ร้านค้า (เสียหายจากค่าธรรมเนียมและของตีกลับ)",
+    "investigation_checklist": [
+      {
+        "item": "ตรวจสอบช่วงเวลา Timestamp ของสถานะในระบบ",
+        "status": "FAILED",
+        "finding": "08:30 ออกนำจ่าย (401) -> 09:15 คีย์ปฏิเสธ (302) -> 10:00 ยิงใส่ถุงส่งคืน (304) ระยะเวลาสั้นผิดปกติวิสัย"
+      },
+      {
+        "item": "ตรวจสอบประวัติการโทรศัพท์ติดต่อผู้รับในระบบ",
+        "status": "FAILED",
+        "finding": "ไม่มีบันทึกการโทรออกในระบบเลย (0 ครั้ง) บุรุษไปรษณีย์ไม่ได้โทรสอบถามก่อนคีย์"
+      },
+      {
+        "item": "ตรวจสอบตำแหน่งปัจจุบันทางกายภาพของกล่องพัสดุ",
+        "status": "WARNING",
+        "finding": "พัสดุถูกใส่ถุงเมล์รอลงเรือข้ามฟากออกจากเกาะสมุยเที่ยว 13:00 น. วันนี้ (ยังไม่หลุดออกจากเกาะ)"
+      },
+      {
+        "item": "ตรวจสอบระเบียบการเก็บรักษาพัสดุ",
+        "status": "FAILED",
+        "finding": "ละเมิดระเบียบ ปณท ข้อกำหนดเก็บรักษาพัสดุ 7 วันหลังเปิดถุงอย่างร้ายแรง"
+      }
+    ],
+    "delivery_attempt_count": 1,
+    "proof_of_delivery": "NO",
+    "recipient_name": "นายธนากร สิริวัฒนโชค",
+    "signed_by": "-",
+    "contact_attempt_count": 2,
+    "contact_history": [
+      {
+        "attempt_no": 1,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T08:45:00+07:00",
+        "phone_number": "089-xxx-5544",
+        "result": "CONNECTED",
+        "note": "โทรหาผู้รับ ยืนยันไม่ได้ปฏิเสธ พร้อมรับของและจ่ายเงินเสมอ"
+      },
+      {
+        "attempt_no": 2,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T09:20:00+07:00",
+        "phone_number": "077-xxx-8900",
+        "result": "CONNECTED",
+        "note": "โทรหานายไปรษณีย์ ปณ.เกาะสมุย สั่งระงับถุงเมล์เที่ยวเรือ 13:00 น. ทันที"
+      }
+    ],
+    "sla_type": "RETENTION_7DAYS",
+    "sla_due_at": "2026-10-12T08:00:00+07:00",
+    "sla_status": "WITHIN",
+    "cec_group": "CEC 8 (ภาคใต้ตอนบน)",
+    "cec_status": "NOT_SENT",
+    "branch_contact_status": "BRANCH_INVESTIGATING",
+    "customer_contact_required": "NO",
+    "recommended_next_action": "ออก Action อายัดพัสดุด่วนที่สุด (HOLD_PARCEL) ที่ท่าเรือเกาะสมุย สั่งแกะถุงเมล์ดึงพัสดุคืน ทำรายการถอยสถานะตีกลับ (REVERSE_RETURN_STATUS) และตั้งกรรมการสอบวินัยพนักงานนำจ่าย",
+    "possible_actions": [
+      "CALL_DESTINATION_BRANCH",
+      "REVERSE_RETURN_STATUS",
+      "REDELIVERY",
+      "KEEP_OPEN"
+    ],
+    "hidden_actions": [
+      "REPLY_AND_CLOSE",
+      "REVIEW_RETURN"
+    ],
+    "verification_required": "ยืนยันจากนายไปรษณีย์เกาะสมุยว่าดึงกล่องพัสดุออกจากถุงเมล์เรือเที่ยวบ่ายสำเร็จ",
+    "final_reply": "ตรวจพบการลงสถานะปฏิเสธและส่งคืนโดยผิดระเบียบของเจ้าหน้าที่ปลายทาง ทางส่วนกลางได้สั่งอายัดพัสดุที่ท่าเรือเกาะสมุยเรียบร้อยแล้ว และสั่งนำจ่ายให้คุณธนากรใหม่รอบบ่ายนี้ทันทีครับ",
+    "close_case": "NO",
+    "close_reason": "เคสละเมิดระเบียบส่งคืน อยู่ระหว่างอายัดของและสกัดจับก่อนลงเรือ",
+    "risk_or_exception_note": "ความเสี่ยงการร้องเรียนทุจริต/ละเว้นการปฏิบัติหน้าที่ หากสกัดจับไม่ทัน ของจะหลุดข้ามฟากไป ศป.ทุ่งสง จะกู้คืนยากมาก"
+  },
+  {
+    "case_id": "REV-2026-1003",
+    "tracking_no": "ED992014003TH",
+    "case_name": "ข้อพิพาทเงินสด COD 4,800 บาท (Disputed COD Collection vs Unreconciled Status)",
+    "case_type": "STATUS_CHECK_REQUEST",
+    "review_complexity": "EXTREME",
+    "urgency_level": "CRITICAL",
+    "origin_province": "กรุงเทพมหานคร",
+    "destination_province": "อุดรธานี",
+    "destination_area_type": "CROSS_PROVINCE",
+    "bag_opened_at": "2026-10-04T09:00:00+07:00",
+    "latest_status": "401 - ออกไปนำจ่าย (ค้างสถานะ 24 ชม.)",
+    "latest_status_at": "2026-10-06T08:30:00+07:00",
+    "issue_message": "ผู้รับแจ้งว่าจ่ายเงินสดค่าสินค้า COD 4,800 บาท และรับกล่องไปตั้งแต่เมื่อวานแล้ว แต่ร้านค้าตรวจใน MyOrder เงินไม่เข้า และสถานะยังค้างอยู่ที่ 401 บุรุษไปรษณีย์ไม่ยอมยิงปิดงาน",
+    "conflicting_parties": "ผู้รับ (มีใบเสร็จเขียนมือ ยืนยันจ่ายเงินแล้ว) VS บุรุษไปรษณีย์ (ยังไม่นำเงินส่งบัญชีสาขา) VS ร้านค้า (เงินไม่เข้า Wallet)",
+    "investigation_checklist": [
+      {
+        "item": "ตรวจสอบหลักฐานการจ่ายเงินของผู้รับ",
+        "status": "VERIFIED",
+        "finding": "ผู้รับมีใบเสร็จรับเงินชั่วคราว ปณ. เล่มสีฟ้า มีลายเซ็นบุรุษไปรษณีย์ รหัสพนักงาน 44021"
+      },
+      {
+        "item": "ตรวจสอบรายงานการปิดยอดเงินสดในระบบ CA Post ของ ปณ.เมืองอุดรธานี",
+        "status": "FAILED",
+        "finding": "ไม่มียอดเงิน 4,800 บาท เข้าระบบแคชเชียร์สาขาเมื่อวานตอนเย็น (ยอดค้างส่ง)"
+      },
+      {
+        "item": "ตรวจสอบสถานะพัสดุในระบบ Track&Trace",
+        "status": "FAILED",
+        "finding": "ยังค้างที่ 401 ข้ามคืนโดยไม่มีการสแกน 501 หรือ 301"
+      },
+      {
+        "item": "สอบถามหัวหน้างานควบคุมการเงิน ปณ.เมืองอุดรธานี",
+        "status": "SUSPICIOUS",
+        "finding": "บุรุษไปรษณีย์ยังไม่มารายงานตัวช่วงเช้าวันนี้ ขาดการติดต่อ"
+      }
+    ],
+    "delivery_attempt_count": 1,
+    "proof_of_delivery": "YES",
+    "recipient_name": "นายชัยวัฒน์ ธรรมรักษา",
+    "signed_by": "นายชัยวัฒน์ ธรรมรักษา (รับของแล้ว)",
+    "contact_attempt_count": 3,
+    "contact_history": [
+      {
+        "attempt_no": 1,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T08:15:00+07:00",
+        "phone_number": "086-xxx-7890",
+        "result": "CONNECTED",
+        "note": "โทรหาผู้รับ ผู้รับส่งรูปใบเสร็จเล่มสีฟ้าและกล่องพัสดุที่เปิดแล้วให้ดู"
+      },
+      {
+        "attempt_no": 2,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T08:50:00+07:00",
+        "phone_number": "042-xxx-3456",
+        "result": "CONNECTED",
+        "note": "โทรหา ผจก.ปณ.อุดรธานี แจ้งเรื่องเงิน COD ค้างส่ง ผจก. กำลังตั้งกรรมการสอบสวน"
+      },
+      {
+        "attempt_no": 3,
+        "called_by": "BRANCH_STAFF",
+        "called_at": "2026-10-07T10:00:00+07:00",
+        "phone_number": "042-xxx-3456",
+        "result": "CONNECTED",
+        "note": "ผจก. แจ้งว่าติดตามตัว จนท. ได้แล้ว อ้างว่ารถล้มเมื่อวานเย็น กำลังนำเงินเข้าบัญชี"
+      }
+    ],
+    "sla_type": "STANDARD_5DAYS",
+    "sla_due_at": "2026-10-09T09:00:00+07:00",
+    "sla_status": "WITHIN",
+    "cec_group": "CEC 6 (ภาคอีสานตอนบน)",
+    "cec_status": "NOT_SENT",
+    "branch_contact_status": "BRANCH_INVESTIGATING",
+    "customer_contact_required": "NO",
+    "recommended_next_action": "กดคงสถานะเคส (KEEP_OPEN) โทรจี้ ผจก.ปณ.อุดรธานี ให้ยิงบันทึกสถานะ 501 และคีย์ยอดเงินเข้าระบบ CA Post ทันที ห้ามปิดเคสจนกว่าเงิน 4,800 บาท จะโอนเข้า Wallet ร้านค้าใน MyOrder สำเร็จ",
+    "possible_actions": [
+      "CALL_DESTINATION_BRANCH",
+      "KEEP_OPEN",
+      "WAIT_FOR_UPDATE"
+    ],
+    "hidden_actions": [
+      "REPLY_AND_CLOSE",
+      "REDELIVERY",
+      "REVERSE_RETURN_STATUS",
+      "REVIEW_RETURN"
+    ],
+    "verification_required": "ตรวจสอบยอดเงิน COD Reconciled ในระบบ MyOrder Payment Gateway ว่าขึ้นสถานะ SUCCESS",
+    "final_reply": "ผู้รับได้รับสินค้าและชำระเงินเรียบร้อยแล้ว ขณะนี้ ผจก.ปณ.เมืองอุดรธานี กำลังควบคุมการคีย์ยอดเงินสด 4,800 บาท เข้าระบบกลาง คาดว่าเงินจะเข้า Wallet ร้านค้าภายในบ่ายวันนี้ครับ",
+    "close_case": "NO",
+    "close_reason": "พัสดุส่งแล้วแต่ยอดเงิน COD ยังไม่เข้าระบบบัญชีร้านค้า ห้ามปิดเด็ดขาด",
+    "risk_or_exception_note": "ความเสี่ยงการทุจริตยักยอกเงินสด COD ต้องติดตามเงินถึงบัญชีร้านค้าเท่านั้นจึงจะปิดงานได้"
+  },
+  {
+    "case_id": "REV-2026-1004",
+    "tracking_no": "ED992014004TH",
+    "case_name": "พัสดุชำรุดเสียหายแตกหักระหว่างทาง (Damaged in Transit / Inspection Report ปณ.14)",
+    "case_type": "RETURN_REQUEST",
+    "review_complexity": "VERY_HIGH",
+    "urgency_level": "HIGH",
+    "origin_province": "สมุทรปราการ",
+    "destination_province": "เชียงราย",
+    "destination_area_type": "CROSS_PROVINCE",
+    "bag_opened_at": "2026-10-03T10:00:00+07:00",
+    "latest_status": "301 - ถึงที่ทำการปลายทาง (มีบันทึกชำรุด)",
+    "latest_status_at": "2026-10-06T14:00:00+07:00",
+    "issue_message": "ปลายทางแจ้งพัสดุแตกเสียหาย มีของเหลวไหลเยิ้มออกจากกล่อง ผู้รับไม่ยอมรับของ ร้านค้าขอคำแนะนำการเคลมค่าชดเชย",
+    "conflicting_parties": "ร้านค้า (แพ็กของมาอย่างดี) VS ศูนย์คัดแยกเด่นชัย (บันทึกกล่องตกกระแทก) VS ผู้รับ (ปฏิเสธรับเพราะกล่องเละ)",
+    "investigation_checklist": [
+      {
+        "item": "ตรวจสอบสภาพกล่องตอนรับฝากต้นทาง",
+        "status": "VERIFIED",
+        "finding": "กล่องอยู่ในสภาพสมบูรณ์ มีสติ๊กเกอร์ระวังแตก (FRAGILE)"
+      },
+      {
+        "item": "ตรวจสอบบันทึกตรวจรับถุงชำรุดระหว่างทาง (ใบ ปณ.14)",
+        "status": "FOUND",
+        "finding": "พบใบ ปณ.14 ออกโดย ศป.เด่นชัย ระบุ 'ถุงเมล์ตกจากสายพาน กล่องพัสดุย่นยุบและมีของเหลวซึม'"
+      },
+      {
+        "item": "ตรวจสอบประเภทสินค้าและการประกันภัย",
+        "status": "WARNING",
+        "finding": "สินค้าเป็นชุดเซรามิกงานฝีมือมูลค่า 5,500 บาท แต่ไม่ได้ทำประกันภัยเพิ่ม (สิทธิ์ชดเชย EMS ปกติสูงสุด 2,000 บาท)"
+      },
+      {
+        "item": "ตรวจสอบรูปถ่ายความเสียหายที่ ปณ.เชียงราย บันทึกไว้",
+        "status": "VERIFIED",
+        "finding": "มีรูปถ่ายกล่องยุบแตก 4 ด้าน และเศษเซรามิกแตกหักชัดเจน"
+      }
+    ],
+    "delivery_attempt_count": 0,
+    "last_delivery_attempt_result": "ตรวจพบพัสดุชำรุดก่อนออกนำจ่าย สาขาทำใบแจ้งให้ผู้รับมาตรวจรับที่ ปณ.",
+    "proof_of_delivery": "NO",
+    "recipient_name": "นายภาณุเดช เวียงแก้ว",
+    "signed_by": "-",
+    "contact_attempt_count": 2,
+    "contact_history": [
+      {
+        "attempt_no": 1,
+        "called_by": "BRANCH_STAFF",
+        "called_at": "2026-10-06T15:00:00+07:00",
+        "phone_number": "081-xxx-9922",
+        "result": "CONNECTED",
+        "note": "โทรแจ้งผู้รับเรื่องกล่องชำรุด ผู้รับขอสละสิทธิ์ไม่รับและให้ทำเรื่องเคลม"
+      },
+      {
+        "attempt_no": 2,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T09:00:00+07:00",
+        "phone_number": "081-xxx-3344",
+        "result": "CONNECTED",
+        "note": "โทรแนะนำร้านค้าขั้นตอนการยื่นคำร้องขอชดใช้ค่าเสียหายพร้อมแนบใบ ปณ.14"
+      }
+    ],
+    "sla_type": "STANDARD_5DAYS",
+    "sla_due_at": "2026-10-08T10:00:00+07:00",
+    "sla_status": "NEAR",
+    "cec_group": "CEC 5 (ภาคเหนือตอนบน)",
+    "cec_status": "REPLIED_COMPLETE",
+    "branch_contact_status": "BRANCH_CONFIRMED",
+    "customer_contact_required": "NO",
+    "recommended_next_action": "ออก Action อนุมัติตีกลับพร้อมสำนวนชำรุด (REVIEW_RETURN) สั่ง ปณ.เชียงราย ทำบันทึก ปณ.14 แนบส่งคืนต้นทาง เพื่อให้ร้านค้านำไปยื่นขอเงินชดใช้ที่ ปณ.ต้นทาง จากนั้นตอบชี้แจงและปิดเคส",
+    "possible_actions": [
+      "REVIEW_RETURN",
+      "REPLY_AND_CLOSE"
+    ],
+    "hidden_actions": [
+      "REDELIVERY",
+      "URGENT_REDELIVERY",
+      "REVERSE_RETURN_STATUS"
+    ],
+    "verification_required": "ตรวจสอบเอกสาร ปณ.14 และรูปถ่ายความเสียหายแนบเข้าระบบ E-Claim สมบูรณ์",
+    "final_reply": "พัสดุชำรุดเสียหายระหว่างขนส่งที่ ศป.เด่นชัย โดยมีใบ ปณ.14 รับรองความเสียหายจากไปรษณีย์ไทยเรียบร้อยแล้ว พัสดุกำลังถูกส่งคืนต้นทางเพื่อให้ร้านค้านำเอกสารไปติดต่อขอรับเงินชดเชยที่ ปณ.ต้นทาง ครับ",
+    "close_case": "YES",
+    "close_reason": "กระบวนการบันทึกความเสียหายและสิทธิ์เคลมครบถ้วนตามระเบียบ ปณท เรียบร้อยแล้ว",
+    "risk_or_exception_note": "การชดใช้ค่าเสียหายตามระเบียบ EMS วงเงิน 2,000 บาท ต้องชี้แจงร้านค้าให้เข้าใจเงื่อนไขวงเงินชดใช้มาตรฐาน"
+  },
+  {
+    "case_id": "REV-2026-1005",
+    "tracking_no": "ED992014005TH",
+    "case_name": "พัสดุวนลูปข้ามศูนย์คัดแยก 3 รอบ (Ping-Pong Routing Loop caused by OCR Misread)",
+    "case_type": "EXPEDITE_DELIVERY",
+    "review_complexity": "VERY_HIGH",
+    "urgency_level": "HIGH",
+    "origin_province": "กรุงเทพมหานคร",
+    "destination_province": "สมุทรปราการ",
+    "destination_area_type": "BANGKOK",
+    "bag_opened_at": "2026-10-02T09:00:00+07:00",
+    "latest_status": "202 - รับถุงส่งต่อ ศป.ศรีราชา (รอบที่ 3)",
+    "latest_status_at": "2026-10-07T04:30:00+07:00",
+    "issue_message": "พัสดุส่งใน กทม.-สมุทรปราการ แต่วิ่งวนไป ศป.ศรีราชา สลับกับ ศป.EMS กรุงเทพฯ มา 5 วันแล้วยังไม่ถึงสาขาปลายทาง เกิน SLA ไปไกลมาก",
+    "conflicting_parties": "ระบบอ่านบาร์โค้ด OCR (อ่านรหัสผิด) VS เจ้าหน้าที่คัดแยก (ปล่อยผ่านลงสายพานอัตโนมัติ) VS ผู้รับ (รอของ)",
+    "investigation_checklist": [
+      {
+        "item": "วิเคราะห์ประวัติการเคลื่อนไหวใน Timeline",
+        "status": "FAILED",
+        "finding": "02/10 ศป.EMS -> 03/10 ศป.ศรีราชา -> 04/10 ศป.EMS -> 05/10 ศป.ศรีราชา -> 06/10 ศป.EMS -> 07/10 ศป.ศรีราชา วนลูป 3 รอบ!"
+      },
+      {
+        "item": "ตรวจสอบจ่าหน้าพัสดุจากรูปถ่ายต้นทาง",
+        "status": "IDENTIFIED",
+        "finding": "ผู้ส่งเขียนรหัสไปรษณีย์ 10540 (บางพลี) แต่ตัวเลข 5 คล้ายเลข 6 เครื่องคัดแยก OCR อ่านเป็น 20150 (พัทยา/ศรีราชา)"
+      },
+      {
+        "item": "ตรวจสอบเหตุผลที่เครื่องเด้งกลับ",
+        "status": "IDENTIFIED",
+        "finding": "พอไปถึง ศป.ศรีราชา สแกนตำบล 'บางพลีใหญ่' พบว่าไม่ใช่ชลบุรี เลยยิงส่งกลับเข้า กทม. พอเข้า กทม. เครื่องสแกนก็ยิงส่งไปศรีราชาใหม่"
+      },
+      {
+        "item": "ตรวจสอบการแทรกแซงด้วยมือ (Manual Relabeling)",
+        "status": "FAILED",
+        "finding": "ยังไม่มีเจ้าหน้าที่ดักจับกล่องเพื่อขีดฆ่ารหัสที่อ่านผิด"
+      }
+    ],
+    "delivery_attempt_count": 0,
+    "last_delivery_attempt_result": "ยังไม่เคยออกนำจ่าย วิ่งวนในลูปสายพานคัดแยก",
+    "proof_of_delivery": "NO",
+    "recipient_name": "นายวรวุฒิ นภาดล",
+    "signed_by": "-",
+    "contact_attempt_count": 1,
+    "contact_history": [
+      {
+        "attempt_no": 1,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T09:30:00+07:00",
+        "phone_number": "085-xxx-2211",
+        "result": "CONNECTED",
+        "note": "โทรหาผู้รับ ยืนยันรหัสไปรษณีย์ที่ถูกต้องคือ 10540 ปณ.บางพลี"
+      }
+    ],
+    "sla_type": "STANDARD_3DAYS",
+    "sla_due_at": "2026-10-05T09:00:00+07:00",
+    "sla_status": "EXCEEDED",
+    "cec_group": "CEC 2 (ภาคกลาง/ตะวันออก)",
+    "cec_status": "NOT_SENT",
+    "branch_contact_status": "NOT_CONTACTED",
+    "customer_contact_required": "NO",
+    "recommended_next_action": "โทรสายตรงด่วนพิเศษหาหัวหน้าฝ่ายคัดแยก ศป.ศรีราชา สั่ง 'ดักจับกล่องพัสดุกายภาพ' (MANUAL_INTERCEPT) คัดแยกออกจากสายพานอัตโนมัติ ทำการขีดฆ่ารหัสไปรษณีย์ที่ผิดด้วยปากกาเคมี และส่งตรงไปยัง ปณ.บางพลี",
+    "possible_actions": [
+      "CALL_CEC",
+      "URGENT_CEC",
+      "KEEP_OPEN"
+    ],
+    "hidden_actions": [
+      "REPLY_AND_CLOSE",
+      "REVERSE_RETURN_STATUS",
+      "REDELIVERY",
+      "CALL_DESTINATION_BRANCH"
+    ],
+    "verification_required": "ยืนยันว่าเจ้าหน้าที่ ศป.ศรีราชา หยิบกล่องออกมา Relabel ด้วยมือแล้ว",
+    "final_reply": "ตรวจพบสาเหตุพัสดุวนลูปเนื่องจากเครื่องคัดแยกอัตโนมัติอ่านลายมือตัวเลขรหัสไปรษณีย์ผิด ทางเราได้ประสาน ศป.ศรีราชา ดักจับกล่องพัสดุเพื่อแก้ไขรหัสด้วยมือ และส่งตรงไปยัง ปณ.บางพลี เรียบร้อยครับ",
+    "close_case": "NO",
+    "close_reason": "เกิน SLA รุนแรง อยู่ระหว่างดักจับพัสดุออกจากระบบวนลูป",
+    "risk_or_exception_note": "Infinite Routing Loop จากระบบอัตโนมัติ ต้องใช้คำสั่ง Manual Intercept ของคนเท่านั้นในการปลดล็อค"
+  },
+  {
+    "case_id": "REV-2026-1006",
+    "tracking_no": "ED992014006TH",
+    "case_name": "ส่งสลับกล่องพัสดุต้นทางเดียวกัน (Cross-Delivery / Swapped Parcels between Customer A & B)",
+    "case_type": "STATUS_CHECK_REQUEST",
+    "review_complexity": "VERY_HIGH",
+    "urgency_level": "HIGH",
+    "origin_province": "กรุงเทพมหานคร",
+    "destination_province": "กรุงเทพมหานคร",
+    "destination_area_type": "BANGKOK",
+    "bag_opened_at": "2026-10-05T08:00:00+07:00",
+    "latest_status": "501 - นำจ่ายสำเร็จ (ส่งสลับคน)",
+    "latest_status_at": "2026-10-06T16:00:00+07:00",
+    "issue_message": "ผู้รับ (คุณนภา) ได้รับกล่องพัสดุแต่เปิดออกมากลายเป็นเสื้อผ้าของอีกคน (คุณวิชัย) ขณะที่คุณวิชัยโทรมาบอกร้านค้าว่าได้ครีมบำรุงผิวของคุณนภา บุรุษไปรษณีย์ส่งสลับกล่องกันในเขตยานนาวา",
+    "conflicting_parties": "ผู้รับ A (ได้ของ B) VS ผู้รับ B (ได้ของ A) VS บุรุษไปรษณีย์ ปณ.ยานนาวา (หยิบส่งสลับหน้าบ้าน)",
+    "investigation_checklist": [
+      {
+        "item": "ตรวจสอบเลข Tracking ที่ส่งสลับกัน",
+        "status": "VERIFIED",
+        "finding": "Tracking ED992014006TH (คุณนภา) สลับกับ ED992014007TH (คุณวิชัย) ส่งจากร้านเดียวกันในรอบเดียวกัน"
+      },
+      {
+        "item": "ตรวจสอบสายนำจ่ายของบุรุษไปรษณีย์",
+        "status": "CONFIRMED",
+        "finding": "ทั้งสองบ้านอยู่ในสายนำจ่ายเขต 3 ปณ.ยานนาวา เดียวกัน ห่างกันเพียง 2 กิโลเมตร"
+      },
+      {
+        "item": "ตรวจสอบสภาพสินค้าข้างในกล่อง",
+        "status": "VERIFIED",
+        "finding": "ทั้งสองฝ่ายยังไม่ได้แกะทำลายสินค้า แค่เปิดฝากล่องดูแล้วรู้ว่าผิด"
+      },
+      {
+        "item": "ตรวจสอบสถานะในระบบกลาง",
+        "status": "WARNING",
+        "finding": "ระบบขึ้น 501 สำเร็จทั้งสองเบอร์ แต่ข้อมูลความเป็นจริงคือผิดคนทั้งคู่"
+      }
+    ],
+    "delivery_attempt_count": 1,
+    "proof_of_delivery": "YES",
+    "recipient_name": "นางสาวนภา รัตนเกียรติ",
+    "signed_by": "นภา (เซ็นรับผิดกล่อง)",
+    "contact_attempt_count": 3,
+    "contact_history": [
+      {
+        "attempt_no": 1,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T08:40:00+07:00",
+        "phone_number": "081-xxx-6677",
+        "result": "CONNECTED",
+        "note": "โทรหาคุณนภา ขอความร่วมมือเก็บสินค้าไว้ในกล่องเดิม รอเจ้าหน้าที่ไปสลับ"
+      },
+      {
+        "attempt_no": 2,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T08:55:00+07:00",
+        "phone_number": "089-xxx-8833",
+        "result": "CONNECTED",
+        "note": "โทรหาคุณวิชัย นัดหมายเวลาเปลี่ยนของช่วง 11:30 น."
+      },
+      {
+        "attempt_no": 3,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T09:10:00+07:00",
+        "phone_number": "02-xxx-2345",
+        "result": "CONNECTED",
+        "note": "โทรสั่งการหัวหน้าสายนำจ่าย ปณ.ยานนาวา ให้นำรถวิ่งไปสลับของทันที"
+      }
+    ],
+    "sla_type": "STANDARD_3DAYS",
+    "sla_due_at": "2026-10-08T08:00:00+07:00",
+    "sla_status": "WITHIN",
+    "cec_group": "CEC 1 (กทม./สมุทรปราการ/นนทบุรี)",
+    "cec_status": "NOT_SENT",
+    "branch_contact_status": "BRANCH_CONFIRMED",
+    "customer_contact_required": "NO",
+    "recommended_next_action": "สั่งการ ปณ.ยานนาวา ให้บุรุษไปรษณีย์ประจำสายวิ่งไปเก็บกล่องพัสดุจากบ้าน A และ B เพื่อทำการสลับคืนให้ถูกต้อง (SWAP_AND_REDELIVER) พร้อมถ่ายภาพหลักฐานการส่งมอบใหม่ทั้งสองจุด",
+    "possible_actions": [
+      "CALL_DESTINATION_BRANCH",
+      "KEEP_OPEN",
+      "WAIT_FOR_UPDATE"
+    ],
+    "hidden_actions": [
+      "REPLY_AND_CLOSE",
+      "REVERSE_RETURN_STATUS",
+      "REVIEW_RETURN"
+    ],
+    "verification_required": "ต้องได้รับภาพถ่ายการรับมอบสินค้าที่ถูกต้องจากทั้งคุณนภาและคุณวิชัย",
+    "final_reply": "ได้ประสานงาน ปณ.ยานนาวา ให้เจ้าหน้าที่นำจ่ายเดินทางไปรับกล่องพัสดุเพื่อทำการสลับส่งมอบให้ถูกต้องระหว่างคุณนภาและคุณวิชัยแล้ว คาดว่าจะแล้วเสร็จก่อน 12:00 น. วันนี้ครับ",
+    "close_case": "NO",
+    "close_reason": "อยู่ระหว่างบุรุษไปรษณีย์เดินทางไปสลับกล่องพัสดุคืนให้ถูกต้อง",
+    "risk_or_exception_note": "เคสส่งสลับกล่อง (Cross-delivery) ต้องควบคุมให้ทั้งสองฝ่ายไม่แกะใช้สินค้า และรีบสลับคืนในวันเดียวกัน"
+  },
+  {
+    "case_id": "REV-2026-1007",
+    "tracking_no": "ED992014007TH",
+    "case_name": "อาหารสดเน่าเสียค้างจ่ายช่วงวันหยุดยาว (Perishable Live Goods decaying over holiday)",
+    "case_type": "URGENT_REDELIVERY_REQUEST",
+    "review_complexity": "EXTREME",
+    "urgency_level": "CRITICAL",
+    "origin_province": "จันทบุรี",
+    "destination_province": "นครราชสีมา",
+    "destination_area_type": "SAME_REGION",
+    "bag_opened_at": "2026-10-04T07:30:00+07:00",
+    "latest_status": "301 - นำจ่ายไม่สำเร็จ (ติดต่อผู้รับไม่ได้ 3 ครั้ง)",
+    "latest_status_at": "2026-10-06T16:00:00+07:00",
+    "issue_message": "สินค้าเป็นผลไม้สดเกรดพรีเมียม (ทุเรียนแกะเนื้อ) ติดค้างอยู่ที่ ปณ.เมืองนครราชสีมา เข้าสู่วันที่ 4 สาขาโทรครบ 3 ครั้งไม่รับสาย หากปล่อยถึง 7 วันของจะเน่าเสียหมดมูลค่า",
+    "conflicting_parties": "กฎระเบียบเก็บรักษา 7 วัน VS อายุสินค้าผลไม้สด (หมดอายุใน 24 ชม.) VS ผู้รับ (ไม่รับสาย)",
+    "investigation_checklist": [
+      {
+        "item": "ตรวจสอบประเภทสินค้าและอายุการเก็บรักษา",
+        "status": "CRITICAL",
+        "finding": "เป็นของสดเน่าเสียง่าย มีกลิ่นเริ่มโชยออกจากกล่อง หากไม่ส่งมอบวันนี้จะต้องทิ้งทำลาย"
+      },
+      {
+        "item": "ตรวจสอบประวัติการโทรของสาขา",
+        "status": "CONFIRMED",
+        "finding": "สาขาโทรครบ 3 ครั้งตามโควตาแล้ว (04/10, 05/10, 06/10) ไม่รับสาย"
+      },
+      {
+        "item": "ตรวจสอบสิทธิ์ Admin โทรครั้งที่ 4 ตามระเบียบ",
+        "status": "EXECUTED",
+        "finding": "Admin MyOrder โทรครั้งที่ 4 ติดต่อญาติผู้รับได้สำเร็จ แจ้งว่าผู้รับไปต่างจังหวัด"
+      },
+      {
+        "item": "ตรวจสอบทางเลือกการส่งมอบพิเศษตามความยินยอม",
+        "status": "AGREED",
+        "finding": "ญาติยินยอมให้ฝากร้านขายยาข้างบ้านที่มีตู้เย็นแช่รักษาไว้แทน"
+      }
+    ],
+    "delivery_attempt_count": 2,
+    "proof_of_delivery": "NO",
+    "recipient_name": "นายเกียรติศักดิ์ พรหมมินทร์",
+    "signed_by": "-",
+    "contact_attempt_count": 4,
+    "contact_history": [
+      {
+        "attempt_no": 1,
+        "called_by": "BRANCH_STAFF",
+        "called_at": "2026-10-04T11:00:00+07:00",
+        "phone_number": "081-xxx-4455",
+        "result": "NO_ANSWER",
+        "note": "โทรครั้งที่ 1 ไม่รับสาย"
+      },
+      {
+        "attempt_no": 2,
+        "called_by": "BRANCH_STAFF",
+        "called_at": "2026-10-05T14:00:00+07:00",
+        "phone_number": "081-xxx-4455",
+        "result": "NO_ANSWER",
+        "note": "โทรครั้งที่ 2 ไม่รับสาย"
+      },
+      {
+        "attempt_no": 3,
+        "called_by": "BRANCH_STAFF",
+        "called_at": "2026-10-06T15:30:00+07:00",
+        "phone_number": "081-xxx-4455",
+        "result": "NO_ANSWER",
+        "note": "โทรครั้งที่ 3 ครบโควตาสาขา"
+      },
+      {
+        "attempt_no": 4,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T08:45:00+07:00",
+        "phone_number": "081-xxx-4455",
+        "result": "CONNECTED",
+        "note": "Admin โทรติดญาติ ญาติขอให้ฝากร้านขายยาข้างบ้านที่มีตู้เย็น"
+      }
+    ],
+    "sla_type": "STANDARD_3DAYS",
+    "sla_due_at": "2026-10-07T07:30:00+07:00",
+    "sla_status": "EXCEEDED",
+    "cec_group": "CEC 6 (ภาคอีสานตอนล่าง)",
+    "cec_status": "NOT_SENT",
+    "branch_contact_status": "BRANCH_CONFIRMED",
+    "customer_contact_required": "NO",
+    "recommended_next_action": "โทรสั่งการ ปณ.นครราชสีมา นำพัสดุออกจ่ายรอบพิเศษด่วนที่สุด (EXPEDITE_PERISHABLE) ส่งมอบให้ร้านขายยาข้างบ้านตามที่ได้รับอนุญาต เพื่อรักษาคุณภาพสินค้าไม่ให้เน่าเสีย",
+    "possible_actions": [
+      "CALL_DESTINATION_BRANCH",
+      "URGENT_REDELIVERY",
+      "KEEP_OPEN"
+    ],
+    "hidden_actions": [
+      "REPLY_AND_CLOSE",
+      "REVERSE_RETURN_STATUS",
+      "REVIEW_RETURN"
+    ],
+    "verification_required": "ตรวจสอบภาพถ่ายและลายเซ็นของเภสัชกรร้านขายยาข้างบ้านที่รับฝากแช่เย็นไว้ให้",
+    "final_reply": "แอดมินติดต่อญาติผู้รับสำเร็จและได้ข้อตกลงให้นำไปฝากแช่เย็นที่ร้านขายยาข้างบ้าน ขณะนี้ ปณ.นครราชสีมา กำลังวิ่งส่งรอบด่วนพิเศษเพื่อป้องกันสินค้าเน่าเสียครับ",
+    "close_case": "NO",
+    "close_reason": "อยู่ระหว่างส่งมอบจุดฝากพิเศษเพื่อกู้วิกฤตสินค้าเน่าเสียง่าย",
+    "risk_or_exception_note": "ข้อยกเว้นระเบียบเก็บ 7 วันสำหรับพัสดุเน่าเสียง่าย (Perishable Goods Exception) หากไม่ส่งมอบทันที บริษัทจะถูกฟ้องร้องค่าเสียหาย"
+  },
+  {
+    "case_id": "REV-2026-1008",
+    "tracking_no": "ED992014008TH",
+    "case_name": "ของในกล่องสูญหายบางส่วน/กล่องโดนกรีด (Pilfered / Partial Loss with Weight Discrepancy)",
+    "case_type": "STATUS_CHECK_REQUEST",
+    "review_complexity": "VERY_HIGH",
+    "urgency_level": "CRITICAL",
+    "origin_province": "กรุงเทพมหานคร",
+    "destination_province": "สงขลา",
+    "destination_area_type": "CROSS_PROVINCE",
+    "bag_opened_at": "2026-10-04T08:00:00+07:00",
+    "latest_status": "301 - ถึงที่ทำการไปรษณีย์ปลายทาง (น้ำหนักไม่ตรง)",
+    "latest_status_at": "2026-10-06T15:30:00+07:00",
+    "issue_message": "ปณ.หาดใหญ่ ชั่งน้ำหนักกล่องพบว่าน้ำหนักหายไป 700 กรัม จากต้นทาง 1.85 กก. เหลือ 1.15 กก. และมีเทปใสแปะทับรอยกรีดก้นกล่อง ผู้รับไม่ยอมรับของ",
+    "conflicting_parties": "ปณ.ต้นทาง (ชั่ง 1,850 กรัม) VS ปณ.หาดใหญ่ (ชั่ง 1,150 กรัม) VS ศป.ระหว่างทาง (จุดที่ของอาจถูกขโมย)",
+    "investigation_checklist": [
+      {
+        "item": "ตรวจสอบบันทึกน้ำหนักตอนรับฝากต้นทาง (ปณ.ภาษีเจริญ)",
+        "status": "VERIFIED",
+        "finding": "น้ำหนักชั่งเข้าระบบระบุ 1,850 กรัม กล่องปิดผนึกด้วยเทปพิมพ์ลายร้านค้า"
+      },
+      {
+        "item": "ตรวจสอบบันทึกน้ำหนักตอนเปิดถุง ศป.ทุ่งสง",
+        "status": "SUSPICIOUS",
+        "finding": "ศป.ทุ่งสง มีการลงบันทึกในใบตรวจถุงว่า 'กล่องฉีกขาดก้นกล่อง มีการปิดเทปใสทับ'"
+      },
+      {
+        "item": "ตรวจสอบน้ำหนักปลายทาง ปณ.หาดใหญ่",
+        "status": "CRITICAL",
+        "finding": "ชั่งได้ 1,150 กรัม หายไป 700 กรัม ชัดเจน สินค้าข้างในคือโทรศัพท์มือถือและอุปกรณ์"
+      },
+      {
+        "item": "ตรวจสอบพฤติกรรมการลงสถานะของสาขา",
+        "status": "CORRECTED",
+        "finding": "เดิมบุรุษไปรษณีย์จะคีย์ 'ผู้รับปฏิเสธ' แต่ถูกทักท้วงให้เปลี่ยนเป็น 'พัสดุชำรุด/สูญหายระหว่างทาง'"
+      }
+    ],
+    "delivery_attempt_count": 0,
+    "last_delivery_attempt_result": "เปิดตรวจร่วมกันระหว่าง ปณ.หาดใหญ่ และผู้รับ พบโทรศัพท์หายไป เหลือแต่อุปกรณ์เสริม",
+    "proof_of_delivery": "NO",
+    "recipient_name": "นายอภิสิทธิ์ เลิศสุวรรณ",
+    "signed_by": "-",
+    "contact_attempt_count": 2,
+    "contact_history": [
+      {
+        "attempt_no": 1,
+        "called_by": "BRANCH_STAFF",
+        "called_at": "2026-10-06T16:00:00+07:00",
+        "phone_number": "081-xxx-7711",
+        "result": "CONNECTED",
+        "note": "เชิญผู้รับมาเปิดตรวจกล่องร่วมกันที่ ปณ.หาดใหญ่ มีบันทึกภาพถ่าย"
+      },
+      {
+        "attempt_no": 2,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T09:30:00+07:00",
+        "phone_number": "081-xxx-7711",
+        "result": "CONNECTED",
+        "note": "แจ้งสิทธิ์ผู้รับและร้านค้าในการเรียกร้องค่าสินไหมทดแทน"
+      }
+    ],
+    "sla_type": "STANDARD_5DAYS",
+    "sla_due_at": "2026-10-09T08:00:00+07:00",
+    "sla_status": "WITHIN",
+    "cec_group": "CEC 9 (ภาคใต้ตอนล่าง)",
+    "cec_status": "NOT_SENT",
+    "branch_contact_status": "BRANCH_CONFIRMED",
+    "customer_contact_required": "NO",
+    "recommended_next_action": "เปิดสำนวนสอบสวนพัสดุสูญหายระหว่างทาง (REPORT_PILFERAGE) สั่ง ปณ.หาดใหญ่ ทำบันทึก ปณ.15 (รายงานพัสดุสูญหายบางส่วน) ส่งสำเนาให้สารวัตรไปรษณีย์ตรวจสอบกล้องวงจรปิด ศป.ทุ่งสง และตั้งเรื่องเคลมเงินชดเชย",
+    "possible_actions": [
+      "CALL_DESTINATION_BRANCH",
+      "KEEP_OPEN",
+      "REVIEW_RETURN"
+    ],
+    "hidden_actions": [
+      "REPLY_AND_CLOSE",
+      "REDELIVERY",
+      "REVERSE_RETURN_STATUS"
+    ],
+    "verification_required": "ตรวจสอบรายงานบันทึกตรวจนับร่วม (ปณ.15) ที่ลงลายมือชื่อโดย นายไปรษณีย์หาดใหญ่ และ ผู้รับ",
+    "final_reply": "ตรวจพบพัสดุถูกกรีดและสินค้าสูญหายระหว่างขนส่ง ปณ.หาดใหญ่ ได้ทำบันทึก ปณ.15 ร่วมกับผู้รับเรียบร้อยแล้ว ขณะนี้เรื่องถูกส่งให้ฝ่ายตรวจสอบภายในดำเนินคดีและจ่ายค่าชดใช้ให้ร้านค้าครับ",
+    "close_case": "NO",
+    "close_reason": "อยู่ระหว่างสอบสวนการสูญหายและการเคลมค่าสินไหมทดแทน",
+    "risk_or_exception_note": "คดีอาญาการลักทรัพย์ระหว่างการขนส่ง ต้องส่งเรื่องให้ฝ่ายสารวัตรไปรษณีย์สืบสวนกล้องวงจรปิดศูนย์คัดแยก"
+  },
+  {
+    "case_id": "REV-2026-1009",
+    "tracking_no": "ED992014009TH",
+    "case_name": "ข้อพิพาทปลอมแปลงลายมือชื่อและส่งนอกเวลาทำการ (Suspected Forged Signature at 21:30 PM)",
+    "case_type": "CLOSE_WORK_REQUEST",
+    "review_complexity": "VERY_HIGH",
+    "urgency_level": "CRITICAL",
+    "origin_province": "กรุงเทพมหานคร",
+    "destination_province": "กรุงเทพมหานคร",
+    "destination_area_type": "BANGKOK",
+    "bag_opened_at": "2026-10-05T08:00:00+07:00",
+    "latest_status": "501 - นำจ่ายสำเร็จ (เวลา 21:30 น.)",
+    "latest_status_at": "2026-10-06T21:30:00+07:00",
+    "issue_message": "ระบบขึ้นนำจ่ายสำเร็จเวลา 3 ทุ่มครึ่ง มีลายเซ็นเป็นชื่อผู้รับ แต่ผู้รับยืนยันว่าเวลานั้นนอนหลับแล้ว ไม่มีใครมากดกริ่ง และลายเซ็นไม่ใช่ของตนเอง สงสัยว่า จนท. เซ็นแทนเพื่อตัดยอด SLA",
+    "conflicting_parties": "บุรุษไปรษณีย์ (ยิง 501 เวลา 21:30 เพื่อหนี KPI SLA หลุด) VS ผู้รับ (ยืนยันไม่ได้ของ ลายเซ็นปลอม)",
+    "investigation_checklist": [
+      {
+        "item": "ตรวจสอบเวลาสแกน 501 (Scan Timestamp)",
+        "status": "ANOMALY",
+        "finding": "สแกนเวลา 21:30:45 น. ซึ่งผิดวิสัยรอบการนำจ่ายปกติของไปรษณีย์ไทย (ปกติไม่เกิน 18:00-19:00 น.)"
+      },
+      {
+        "item": "ตรวจสอบรูปถ่ายหลักฐาน POD",
+        "status": "FAILED",
+        "finding": "รูปถ่ายมืดสนิท เป็นภาพถ่ายสีดำล้วน ไม่เห็นกล่องพัสดุหรือสิ่งปลูกสร้างใดๆ"
+      },
+      {
+        "item": "ตรวจสอบลายมือชื่อเทียบกับลายเซ็นจริงของผู้รับ",
+        "status": "FORGERY_SUSPECTED",
+        "finding": "ลายเซ็นในเครื่องสแกนเป็นเส้นตรงหวัดๆ ไม่ตรงกับตัวอย่างลายเซ็นในบัตรประชาชนของผู้รับ"
+      },
+      {
+        "item": "ตรวจสอบตำแหน่งทางกายภาพของพัสดุ",
+        "status": "IDENTIFIED",
+        "finding": "พบว่ากล่องพัสดุยังคงซุกอยู่ในกระเป๋าท้ายรถมอเตอร์ไซค์ของบุรุษไปรษณีย์ ยังไม่ได้นำไปส่งจริง"
+      }
+    ],
+    "delivery_attempt_count": 1,
+    "proof_of_delivery": "UNCLEAR",
+    "recipient_name": "นายวีรภัทร ชาญวิทย์",
+    "signed_by": "วีรภัทร (ลายเซ็นปลอม)",
+    "customer_claim": "ผู้รับแจ้งความประสงค์จะร้องเรียน สคบ. หากไม่มีคำตอบว่าทำไมเซ็นชื่อตนเอง",
+    "contact_attempt_count": 2,
+    "contact_history": [
+      {
+        "attempt_no": 1,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T08:30:00+07:00",
+        "phone_number": "089-xxx-4321",
+        "result": "CONNECTED",
+        "note": "โทรหาผู้รับ ผู้รับโกรธมาก ขอดูกล้องวงจรปิดหน้าบ้านยืนยันไม่มีรถมา"
+      },
+      {
+        "attempt_no": 2,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T09:15:00+07:00",
+        "phone_number": "02-xxx-8765",
+        "result": "CONNECTED",
+        "note": "โทรแจ้งผู้ช่วยนายไปรษณีย์ ปณ.คลองจั่น สั่งเรียกตัว จนท. คนดังกล่าวมาเค้นสอบทันที"
+      }
+    ],
+    "sla_type": "STANDARD_3DAYS",
+    "sla_due_at": "2026-10-08T08:00:00+07:00",
+    "sla_status": "WITHIN",
+    "cec_group": "CEC 1 (กทม./สมุทรปราการ/นนทบุรี)",
+    "cec_status": "NOT_SENT",
+    "branch_contact_status": "BRANCH_INVESTIGATING",
+    "customer_contact_required": "NO",
+    "recommended_next_action": "ปฏิเสธการปิดเคส สั่งถอนสถานะ 501 เท็จ สั่งให้หัวหน้างานนำจ่าย ปณ.คลองจั่น นำพัสดุไปส่งมอบให้ผู้รับด้วยตนเองพร้อมกล่าวขอโทษภายใน 11:30 น. และส่งเรื่องลงโทษทางวินัยพนักงาน",
+    "possible_actions": [
+      "CALL_DESTINATION_BRANCH",
+      "KEEP_OPEN",
+      "REDELIVERY"
+    ],
+    "hidden_actions": [
+      "REPLY_AND_CLOSE",
+      "REVERSE_RETURN_STATUS",
+      "REVIEW_RETURN"
+    ],
+    "verification_required": "หัวหน้างานต้องถ่ายภาพการส่งมอบจริงร่วมกับผู้รับและอัปโหลดลายเซ็นจริงเข้าระบบ",
+    "final_reply": "ตรวจสอบพบข้อผิดพลาดร้ายแรงจากการสแกนตัดยอดนอกเวลาทำการ ขณะนี้ผู้ช่วยนายไปรษณีย์ ปณ.คลองจั่น กำลังเดินทางนำพัสดุไปส่งมอบให้คุณวีรภัทรด้วยตนเอง พร้อมดำเนินการทางวินัยกับผู้เกี่ยวข้องครับ",
+    "close_case": "NO",
+    "close_reason": "สแกนสถานะเท็จ (Fake Scan/Ghost Delivery) อยู่ระหว่างหัวหน้างานลงพื้นที่แก้ไข",
+    "risk_or_exception_note": "Ghost Scanning เพื่อรักษา KPI เป็นความผิดทางวินัยร้ายแรง มีความเสี่ยงต่อชื่อเสียงองค์กรสูงมาก"
+  },
+  {
+    "case_id": "REV-2026-1010",
+    "tracking_no": "ED992014010TH",
+    "case_name": "ขอเปลี่ยนที่อยู่ข้ามเขตภูมิภาค (Reroute Request to another Province with Security Verification)",
+    "case_type": "STATUS_CHECK_REQUEST",
+    "review_complexity": "VERY_HIGH",
+    "urgency_level": "HIGH",
+    "origin_province": "กรุงเทพมหานคร",
+    "destination_province": "เชียงใหม่",
+    "destination_area_type": "CROSS_PROVINCE",
+    "bag_opened_at": "2026-10-05T09:00:00+07:00",
+    "latest_status": "301 - ถึงที่ทำการไปรษณีย์ปลายทาง (ปณ.แม่ริม)",
+    "latest_status_at": "2026-10-06T15:00:00+07:00",
+    "issue_message": "มีผู้แชทเข้ามาใน MyOrder อ้างว่าเป็นผู้ซื้อ ขอเปลี่ยนที่อยู่จัดส่งจาก ปณ.แม่ริม (เชียงใหม่) ไปส่งที่ อ.หาดใหญ่ (สงขลา) ด่วน อ้างว่าย้ายที่ทำงานกะทันหัน สินค้าเป็นแหวนทองคำมูลค่า 28,000 บาท",
+    "conflicting_parties": "ผู้ขอเปลี่ยนที่อยู่ (สงสัยเป็นมิจฉาชีพดักสวมสิทธิ์) VS บัญชีร้านค้า VS ปณ.แม่ริม (ถือพัสดุอยู่)",
+    "investigation_checklist": [
+      {
+        "item": "ตรวจสอบความปลอดภัยและยืนยันตัวตน (KYC / Fraud Detection)",
+        "status": "FAILED",
+        "finding": "เบอร์โทรที่ทักมาขอเปลี่ยนที่อยู่ ไม่ตรงกับเบอร์โทรศัพท์ในคำสั่งซื้อ MyOrder เดิม (มีพฤติการณ์สวมรอย)"
+      },
+      {
+        "item": "ตรวจสอบระเบียบการส่งต่อพัสดุข้ามเขต ปณท (Forwarding Regulations)",
+        "status": "RESTRICTED",
+        "finding": "การขอส่งต่อข้ามเขตข้ามจังหวัด ต้องยื่นคำร้องเป็นลายลักษณ์อักษรโดยผู้ส่งเท่านั้น ผู้รับไม่มีสิทธิ์เปลี่ยนที่อยู่ข้ามภาคตามอำเภอใจ"
+      },
+      {
+        "item": "ตรวจสอบมูลค่าสินค้าและการประกันภัย",
+        "status": "HIGH_VALUE",
+        "finding": "สินค้าทองคำ 28,000 บาท จัดเป็นสินค้าเสี่ยงสูง (High-Risk Target)"
+      },
+      {
+        "item": "ประสาน ปณ.แม่ริม เพื่อล็อคพัสดุ",
+        "status": "LOCKED",
+        "finding": "สั่งอายัดพัสดุไว้ในตู้นิรภัย ปณ.แม่ริม แล้ว ไม่ให้ออกนำจ่ายหรือส่งต่อจนกว่าจะคลี่คลาย"
+      }
+    ],
+    "delivery_attempt_count": 0,
+    "last_delivery_attempt_result": "ถูกอายัดไว้ในตู้นิรภัยเพื่อความปลอดภัย",
+    "proof_of_delivery": "NO",
+    "recipient_name": "นางสาวกัลยาณี เจริญพานิช",
+    "signed_by": "-",
+    "contact_attempt_count": 2,
+    "contact_history": [
+      {
+        "attempt_no": 1,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T09:00:00+07:00",
+        "phone_number": "081-xxx-9988",
+        "result": "CONNECTED",
+        "note": "โทรหาเบอร์ผู้รับตัวจริงในระบบ ยืนยันว่าไม่ได้ขอย้ายไปหาดใหญ่ และกำลังรอรับที่เชียงใหม่! ยืนยันเคสสวมรอย"
+      },
+      {
+        "attempt_no": 2,
+        "called_by": "ADMIN_MYORDER",
+        "called_at": "2026-10-07T09:30:00+07:00",
+        "phone_number": "053-xxx-1122",
+        "result": "CONNECTED",
+        "note": "โทรแจ้ง ปณ.แม่ริม ปลดล็อคให้นำจ่ายคุณกัลยาณีตัวจริงที่เชียงใหม่ โดยตรวจบัตรประชาชนก่อนมอบ"
+      }
+    ],
+    "sla_type": "STANDARD_5DAYS",
+    "sla_due_at": "2026-10-10T09:00:00+07:00",
+    "sla_status": "WITHIN",
+    "cec_group": "CEC 5 (ภาคเหนือตอนบน)",
+    "cec_status": "NOT_SENT",
+    "branch_contact_status": "BRANCH_CONFIRMED",
+    "customer_contact_required": "NO",
+    "recommended_next_action": "ปฏิเสธคำขอเปลี่ยนที่อยู่ข้ามจังหวัดทันที และออก Action 'นำจ่ายผู้รับตัวจริงพร้อมตรวจบัตรประชาชน' (SECURE_DELIVERY_WITH_ID) ให้ ปณ.แม่ริม นำส่งมอบให้คุณกัลยาณีตัวจริงเพื่อป้องกันการฉ้อโกง",
+    "possible_actions": [
+      "CALL_DESTINATION_BRANCH",
+      "KEEP_OPEN",
+      "REDELIVERY"
+    ],
+    "hidden_actions": [
+      "REPLY_AND_CLOSE",
+      "REVERSE_RETURN_STATUS",
+      "REVIEW_RETURN"
+    ],
+    "verification_required": "บุรุษไปรษณีย์ต้องตรวจบัตรประชาชนและถ่ายภาพคู่กับผู้รับตัวจริงตามจ่าหน้าเดิมเท่านั้น",
+    "final_reply": "ตรวจพบความพยายามสวมสิทธิ์เปลี่ยนที่อยู่จากบุคคลภายนอก ทางเราได้ประสาน ปณ.แม่ริม ป้องกันพัสดุไว้ในตู้นิรภัย และจะนำจ่ายให้คุณกัลยาณีตามที่อยู่เดิมเชียงใหม่ โดยตรวจสอบบัตรประชาชนอย่างเข้มงวดครับ",
+    "close_case": "NO",
+    "close_reason": "สกัดกั้นการฉ้อโกงสำเร็จ อยู่ระหว่างนำจ่ายแบบตรวจสอบบัตรประชาชน",
+    "risk_or_exception_note": "Account Takeover / Delivery Address Spoofing ป้องกันความเสียหายมูลค่าเกือบ 3 หมื่นบาทได้สำเร็จ"
+  }
+]

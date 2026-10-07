@@ -15,22 +15,65 @@ export type CaseStatus =
 export type UserRole = 'CENTRAL' | 'CEC' | 'BRANCH' | 'MERCHANT' | 'MYORDER_ADMIN';
 
 export type IssueCategory =
+  | 'EXPEDITE_REQUEST'       // เร่งนำส่ง (ขอเร่งรัดนำจ่าย)
+  | 'CLOSE_WORK_REQUEST'     // แจ้งปิดงาน (ปลายทางได้รับสินค้าแล้วแต่สถานะยังไม่สำเร็จ)
+  | 'REDELIVERY_REQUEST'     // เร่งนำจ่ายใหม่อีกครั้ง / นำจ่ายใหม่
+  | 'RETURN_OR_REVERSE'      // แจ้งตีกลับ / ถอยสถานะตีกลับและแจ้งนำส่งใหม่
   | 'DELAYED_DELIVERY'       // พัสดุล่าช้าเกินกำหนด
   | 'NOT_RECEIVED'           // ผู้รับยังไม่ได้รับของ (สถานะขึ้นนำจ่ายสำเร็จ)
   | 'WRONG_BRANCH'           // พัสดุส่งผิดสาขา / ตีกลับผิดพลาด
   | 'DAMAGED_PARCEL'         // พัสดุชำรุดเสียหาย
   | 'CANNOT_LOCATE'          // ค้นหาพัสดุไม่พบในระบบ
-  | 'EXPEDITE_REQUEST'       // ขอเร่งนำส่ง
   | 'OTHER';                 // อื่นๆ
 
 export type UrgencyLevel = 'NORMAL' | 'HIGH' | 'CRITICAL';
 
+export type SlaRouteType = 'SAME_REGION_OR_BKK' | 'CROSS_PROVINCE'; // กทม./ภาคเดียวกัน (3 วัน) vs ข้ามจังหวัด (3-5 วัน)
+
+export type CallOutcome =
+  | 'NO_ANSWER'            // ไม่รับสาย
+  | 'CANNOT_CONTACT'       // ปิดเครื่อง / ติดต่อไม่ได้
+  | 'ANSWERED'             // รับสายแล้ว
+  | 'POSTPONED'            // ผู้รับขอเลื่อนวันส่ง
+  | 'CONFIRMED_RECEIVED'   // โทรคอนเฟิร์มแล้ว: ยืนยันได้รับพัสดุจริง
+  | 'NOT_RECEIVED'         // ผู้รับยืนยันยังไม่ได้รับ
+  | 'REJECTED'             // ผู้รับปฏิเสธรับ
+  | 'OTHER';
+
+export interface PhoneCallAttempt {
+  id: string;
+  attemptNumber: number; // 1, 2, 3 (เจ้าหน้าที่นำจ่าย/สาขา) หรือ 4 (แอดมินโทรตาม)
+  callerRole: 'OFFICER' | 'ADMIN';
+  callerName: string;
+  calledAt: string;
+  phoneNumber: string;
+  outcome: CallOutcome;
+  outcomeLabel: string;
+  note?: string;
+}
+
+export interface CloseVerificationRecord {
+  verifiedAt: string;
+  verifiedBy: string;
+  verifiedRole: UserRole;
+  category: IssueCategory;
+  centralStatusChecked: boolean;
+  centralStatusText: string;
+  hasProofEvidence: boolean;
+  proofPhotoUrl?: string;
+  recipientPhoneConfirmed: boolean;
+  resolutionNotes: string;
+  replySentToMerchant: string;
+}
+
 export interface TrackingEvent {
   timestamp: string;
   status: string;
+  statusCode?: string; // รหัสสถานะตาม THP Developer Guide เช่น '103', '201', '220', '301', '303', '304', '401', '501'
   location: string;
   description: string;
   recipientOrSigner?: string;
+  isBagOpenEvent?: boolean; // ระบุว่าเป็นเหตุการณ์เปิดถุง (รหัส 220)
 }
 
 export interface ParcelInfo {
@@ -44,9 +87,16 @@ export interface ParcelInfo {
   receiverPhone: string;
   receiverAddress: string;
   currentPostalStatus: string;
+  currentStatusCode?: string;       // รหัสสถานะล่าสุดตาม THP Developer Guide (เช่น '501', '401', '301')
   signerName?: string;
   weightKg: number;
   events: TrackingEvent[];
+  bagOpenedAt?: string;             // วันเวลาที่เปิดถุง (ใช้นับเริ่ม SLA)
+  deliveryProofPhotoUrl?: string;   // ภาพหลักฐานการจัดส่ง (POD)
+  deliveryProofPhotoNote?: string;
+  recipientConfirmedReceived?: boolean; // ปลายทางคอนเฟิร์มว่าได้รับจริง
+  recipientConfirmedAt?: string;
+  recipientConfirmedBy?: string;
 }
 
 export interface ChatMessage {
@@ -112,12 +162,26 @@ export interface CaseItem {
   assignedCecName?: string;
   assignedBranchName?: string;
   
-  // SLA Fields (3 days from start)
+  // SLA Fields (นับจากวันเปิดถุง: กทม./ภาคเดียวกัน 3 วัน, ข้ามจังหวัด 3-5 วัน, เก็บพัสดุ 7 วัน)
   createdAt: string;              // ISO String
   dispatchedAt?: string;          // ISO String (when sent to CEC or Central review started)
-  slaDeadline: string;            // ISO String (createdAt + 72 hours)
+  bagOpenedAt?: string;           // วันที่เปิดถุง (จุดเริ่มต้นนับ SLA)
+  slaRouteType?: SlaRouteType;    // กทม./ภาคเดียวกัน (3 วัน) หรือ ข้ามจังหวัด (3-5 วัน)
+  slaTargetDays?: number;         // 3 หรือ 5 วัน
+  slaDeadline: string;            // ISO String (bagOpenedAt + 3 or 5 days)
+  retentionDeadline?: string;     // ISO String (bagOpenedAt + 7 days เก็บรักษาพัสดุ)
   isSlaExceeded: boolean;
   
+  // Call Attempts (เจ้าหน้าที่โทร 3 ครั้ง + แอดมินโทรครั้งที่ 4)
+  callAttempts?: PhoneCallAttempt[];
+
+  // Delivery Evidence & Confirmation
+  deliveryProofPhotoUrl?: string;       // ภาพถ่ายหลักฐานการนำส่ง (POD)
+  recipientConfirmedReceived?: boolean; // ปลายทางคอนเฟิร์มว่าได้รับจริง
+
+  // Verification record when closing case
+  closeVerification?: CloseVerificationRecord;
+
   // Answers & Reviews
   cecReply?: {
     answer: string;

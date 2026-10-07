@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCases } from '../../context/CaseContext';
 import type { UserRole } from '../../types/case';
 import { CEC_REGIONS } from '../../data/cecRegions';
 import { useMyOrder } from '../../context/MyOrderContext';
+import { confirmDialog } from '../../utils/dialog';
+import { ThaiPostStatusGuideModal } from '../common/ThaiPostStatusGuideModal';
 import {
   Store,
   MonitorCheck,
@@ -11,7 +13,10 @@ import {
   MapPin,
   Search,
   AlertOctagon,
-  ShieldCheck
+  ShieldCheck,
+  RotateCw,
+  RotateCcw,
+  BookOpen
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -22,9 +27,28 @@ export const Header: React.FC = () => {
     setSelectedCecId,
     searchQuery,
     setSearchQuery,
-    counts
+    counts,
+    isRefreshing,
+    refreshData,
+    resetToMockData
   } = useCases();
   const { shops, selectedShopId, setSelectedShopId } = useMyOrder();
+  const [showGuideModal, setShowGuideModal] = useState(false);
+
+  const handleReset = async () => {
+    const ok = await confirmDialog(
+      'คุณต้องการรีเซ็ตข้อมูลเคสทั้งหมดกลับเป็นค่า Mock Data เริ่มต้น (14 เคส) หรือไม่?',
+      {
+        title: 'ยืนยันการรีเซ็ตข้อมูลเริ่มต้น',
+        confirmLabel: 'รีเซ็ตข้อมูล',
+        cancelLabel: 'ยกเลิก',
+        tone: 'danger'
+      }
+    );
+    if (ok) {
+      resetToMockData();
+    }
+  };
   const isMyOrderRole = role === 'MERCHANT' || role === 'MYORDER_ADMIN';
 
   const roleOptions: { role: UserRole; label: string; icon: React.ReactNode }[] = [
@@ -152,9 +176,85 @@ export const Header: React.FC = () => {
           {!isMyOrderRole && counts.slaExceeded > 0 && (
             <div className="sla-quick-alert-pill" title="มีเคสที่เกิน SLA 3 วัน ต้องติดต่อสาขาปลายทาง">
               <AlertOctagon size={15} />
-              <span>เกิน SLA 3 วัน: {counts.slaExceeded} เคส</span>
+              <span>เกิน SLA: {counts.slaExceeded} เคส</span>
             </div>
           )}
+
+          {/* Refresh Data Button */}
+          <button
+            type="button"
+            onClick={() => refreshData()}
+            disabled={isRefreshing}
+            className="header-action-btn"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.35rem 0.75rem',
+              borderRadius: '6px',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              background: 'rgba(255,255,255,0.12)',
+              color: '#FFFFFF',
+              border: '1px solid rgba(255,255,255,0.22)',
+              cursor: isRefreshing ? 'wait' : 'pointer',
+              transition: 'all 0.2s'
+            }}
+            title="รีเฟรชข้อมูลพัสดุและคำนวณ SLA ล่าสุด"
+          >
+            <RotateCw size={13} className={isRefreshing ? 'spin-animation' : ''} />
+            <span>{isRefreshing ? 'กำลังรีเฟรช...' : 'รีเฟรชข้อมูล'}</span>
+          </button>
+
+          {/* Reset Mock Data Button */}
+          <button
+            type="button"
+            onClick={handleReset}
+            className="header-action-btn"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.35rem 0.65rem',
+              borderRadius: '6px',
+              fontSize: '0.78rem',
+              fontWeight: 500,
+              background: 'rgba(239,68,68,0.15)',
+              color: '#FCA5A5',
+              border: '1px solid rgba(239,68,68,0.3)',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            title="รีเซ็ตเคสและสถานะทั้งหมดกลับสู่ค่า Mock Data เริ่มต้น (14 เคส)"
+          >
+            <RotateCcw size={12} />
+            <span>รีเซ็ตเคส</span>
+          </button>
+
+          {/* Thai Post 30 Status Codes Guide Button */}
+          <button
+            type="button"
+            onClick={() => setShowGuideModal(true)}
+            className="header-action-btn"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.35rem 0.65rem',
+              borderRadius: '6px',
+              fontSize: '0.78rem',
+              fontWeight: 500,
+              background: 'rgba(59,130,246,0.18)',
+              color: '#93C5FD',
+              border: '1px solid rgba(59,130,246,0.35)',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            title="เปิดคู่มือรหัสสถานะพัสดุไปรษณีย์ไทย 30 รหัสตาม Track & Trace Developer Guide"
+          >
+            <BookOpen size={13} />
+            <span>30 สถานะ ปณท</span>
+          </button>
 
           <div
             style={{
@@ -169,10 +269,13 @@ export const Header: React.FC = () => {
             }}
           >
             <ShieldCheck size={14} color="#10B981" />
-            <span>Audit Log Active</span>
+            <span>Audit Log</span>
           </div>
         </div>
       </div>
+
+      {/* 30 Thailand Post Status Codes Modal */}
+      <ThaiPostStatusGuideModal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)} />
     </header>
   );
 };

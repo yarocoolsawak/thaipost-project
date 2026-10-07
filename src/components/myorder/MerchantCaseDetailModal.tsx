@@ -168,7 +168,15 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
                   )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
                     <span style={{ color: 'var(--thp-muted)' }}>กำหนดตอบกลับ:</span>
-                    <SlaBadge deadlineIso={caseItem.slaDeadline} isExceeded={caseItem.isSlaExceeded} status={caseItem.status} />
+                    <SlaBadge
+                      deadlineIso={caseItem.slaDeadline}
+                      isExceeded={caseItem.isSlaExceeded}
+                      status={caseItem.status}
+                      bagOpenedAt={caseItem.bagOpenedAt || caseItem.parcelInfo?.bagOpenedAt}
+                      targetDays={caseItem.slaTargetDays}
+                      routeType={caseItem.slaRouteType}
+                      retentionDeadline={caseItem.retentionDeadline}
+                    />
                   </div>
                 </div>
                 )}

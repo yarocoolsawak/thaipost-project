@@ -51,9 +51,9 @@ export const AnswerReviewModal: React.FC<AnswerReviewModalProps> = ({ caseItem, 
         <div className="modal-header">
           <h2>
             <CheckCircle2 size={20} color="#0284C7" />
-            <span>ตรวจสอบและรีวิวคำตอบจาก CEC (Central Quality Review)</span>
+            <span>ตรวจสอบคำตอบจาก CEC</span>
           </h2>
-          <button type="button" className="close-btn" onClick={onClose}>
+          <button type="button" className="close-btn" onClick={onClose} title="ปิด">
             <X size={20} />
           </button>
         </div>
@@ -196,7 +196,7 @@ export const AnswerReviewModal: React.FC<AnswerReviewModalProps> = ({ caseItem, 
 
           {mode !== 'REQUEST_INFO' && (
             <div className="form-group">
-              <label>บันทึกภายในของ ปณ.ส่วนกลาง (Internal Review Note):</label>
+              <label>บันทึกภายในของ ปณ.ส่วนกลาง:</label>
               <input
                 type="text"
                 className="form-control"
@@ -224,7 +224,7 @@ export const AnswerReviewModal: React.FC<AnswerReviewModalProps> = ({ caseItem, 
               </>
             ) : (
               <>
-                <Send size={16} /> ยืนยันและส่งคำตอบให้ร้านค้า (Dispatch)
+                <Send size={16} /> ยืนยันและส่งคำตอบให้ร้านค้า
               </>
             )}
           </button>

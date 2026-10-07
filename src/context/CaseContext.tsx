@@ -1,10 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import type { CaseItem, UserRole, IssueCategory, UrgencyLevel, BranchContactLog, ActivityLog, ChatMessage, EmailPayload, OfficialEmailRecord, MyOrderActorRole } from '../types/case';
+import type { CaseItem, UserRole, IssueCategory, UrgencyLevel, BranchContactLog, ActivityLog, ChatMessage, EmailPayload, OfficialEmailRecord, MyOrderActorRole, PhoneCallAttempt } from '../types/case';
 import { EMAIL_REQUEST_TYPE_LABEL } from '../utils/emailTemplates';
 import { DEFAULT_DATE_FILTER, matchesDateFilter, type CaseDateFilter } from '../utils/dateFilter';
 import { INITIAL_CASES } from '../data/mockCases';
 import { resolveCecFromParcel } from '../data/cecRegions';
 import { fetchThaiPostTrackAndTrace, fetchTrackingUpdate } from '../services/trackTraceApi';
+import {
+  getSlaRouteType,
+  getSlaTargetDays,
+  findBagOpenDate,
+  calculateSlaDeadline,
+  calculateRetentionDeadline
+} from '../utils/slaCalculator';
+import { notify } from '../utils/dialog';
 
 export type TrackingSyncResult = 'NO_CHANGE' | 'UPDATED' | 'CEC_ASSIGNED';
 
@@ -60,7 +68,14 @@ interface CaseContextType {
   closeCase: (caseId: string, resolutionNotes?: string) => void;
   addChatMessage: (caseId: string, message: string, senderRole?: UserRole, senderName?: string, isInternal?: boolean) => void;
   sendOfficialEmail: (caseId: string, payload: EmailPayload) => void;
+  logPhoneCallAttempt: (caseId: string, attempt: Omit<PhoneCallAttempt, 'id' | 'calledAt'>) => void;
+  confirmRecipientReceived: (caseId: string, confirmed: boolean, note?: string) => void;
   
+  // Refresh & Reset
+  isRefreshing: boolean;
+  refreshData: () => Promise<void>;
+  resetToMockData: () => void;
+
   // Badge counts
   counts: {
     total: number;
@@ -189,7 +204,11 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const now = new Date();
     const nowIso = now.toISOString();
-    const slaDeadlineIso = new Date(now.getTime() + 72 * 3600 * 1000).toISOString(); // 3 days SLA
+    const routeType = getSlaRouteType(parcelInfo.originZipCode, parcelInfo.destZipCode);
+    const targetDays = getSlaTargetDays(parcelInfo.originZipCode, parcelInfo.destZipCode);
+    const bagOpenedAt = findBagOpenDate(parcelInfo.events, nowIso);
+    const slaDeadlineIso = calculateSlaDeadline(bagOpenedAt, targetDays);
+    const retentionDeadlineIso = calculateRetentionDeadline(bagOpenedAt, 7);
 
     caseSeq.current += 1;
     const newId = `TP-2026-${caseSeq.current.toString().padStart(4, '0')}`;
@@ -272,8 +291,15 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
       assignedBranchName: parcelInfo.destPostOffice,
       createdAt: nowIso,
       dispatchedAt: assignedCec ? nowIso : undefined,
+      bagOpenedAt,
+      slaRouteType: routeType,
+      slaTargetDays: targetDays,
       slaDeadline: slaDeadlineIso,
+      retentionDeadline: retentionDeadlineIso,
       isSlaExceeded: false,
+      callAttempts: [],
+      deliveryProofPhotoUrl: parcelInfo.deliveryProofPhotoUrl,
+      recipientConfirmedReceived: parcelInfo.recipientConfirmedReceived,
       branchContactLogs: [],
       chatHistory,
       activityLogs,
@@ -636,6 +662,116 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
+  // Log Phone Call Attempt (จนท. 3 ครั้ง + แอดมินครั้งที่ 4)
+  const logPhoneCallAttempt = (caseId: string, attempt: Omit<PhoneCallAttempt, 'id' | 'calledAt'>) => {
+    const nowIso = new Date().toISOString();
+    const newAttempt: PhoneCallAttempt = {
+      ...attempt,
+      id: `call-${Date.now()}`,
+      calledAt: nowIso
+    };
+    setCases(prev =>
+      prev.map(c => {
+        if (c.id !== caseId) return c;
+        const attempts = [...(c.callAttempts || []), newAttempt];
+        const log: ActivityLog = {
+          id: `log-call-${Date.now()}`,
+          timestamp: nowIso,
+          actorName: attempt.callerName,
+          actorRole: attempt.callerRole === 'ADMIN' ? 'MYORDER_ADMIN' : 'BRANCH',
+          action: `บันทึกการโทรติดต่อผู้รับ (ครั้งที่ ${attempt.attemptNumber})`,
+          details: `ผลการโทร: ${attempt.outcomeLabel} (${attempt.phoneNumber})${attempt.note ? ` - ${attempt.note}` : ''}`
+        };
+        return {
+          ...c,
+          callAttempts: attempts,
+          recipientConfirmedReceived: attempt.outcome === 'CONFIRMED_RECEIVED' ? true : c.recipientConfirmedReceived,
+          activityLogs: [log, ...c.activityLogs]
+        };
+      })
+    );
+  };
+
+  // Confirm recipient received goods (โทรคอนเฟิร์มปลายทาง)
+  const confirmRecipientReceived = (caseId: string, confirmed: boolean, note?: string) => {
+    const nowIso = new Date().toISOString();
+    setCases(prev =>
+      prev.map(c => {
+        if (c.id !== caseId) return c;
+        const log: ActivityLog = {
+          id: `log-confirm-${Date.now()}`,
+          timestamp: nowIso,
+          actorName: role === 'MYORDER_ADMIN' ? 'แอดมิน MyOrder' : 'เจ้าหน้าที่ ปณ.',
+          actorRole: role,
+          action: 'โทรคอนเฟิร์มปลายทางยืนยันรับพัสดุ',
+          details: note || (confirmed ? 'ปลายทางยืนยันได้รับสินค้าแล้ว' : 'ปลายทางยืนยันยังไม่ได้รับ')
+        };
+        return {
+          ...c,
+          recipientConfirmedReceived: confirmed,
+          activityLogs: [log, ...c.activityLogs]
+        };
+      })
+    );
+  };
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Refresh all cases: fetch latest parcel info & re-check SLAs
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      const nowMs = Date.now();
+      const updatedCases = await Promise.all(
+        cases.map(async c => {
+          if (c.status === 'CLOSED') return c;
+          let parcel = c.parcelInfo;
+          try {
+            parcel = await fetchTrackingUpdate(c.parcelInfo);
+          } catch {
+            // keep existing parcel
+          }
+          const deadlineMs = new Date(c.slaDeadline).getTime();
+          const isOverdue = deadlineMs < nowMs;
+          const nextStatus =
+            isOverdue && c.status !== 'SLA_EXCEEDED' && c.status !== 'CENTRAL_CONTACT_BRANCH'
+              ? 'SLA_EXCEEDED'
+              : c.status;
+          return {
+            ...c,
+            parcelInfo: parcel,
+            isSlaExceeded: isOverdue,
+            status: nextStatus
+          };
+        })
+      );
+      setCases(updatedCases);
+      notify('รีเฟรชข้อมูลสถานะพัสดุและคำนวณ SLA ล่าสุดเรียบร้อยแล้ว', {
+        title: 'รีเฟรชข้อมูลสำเร็จ',
+        tone: 'success'
+      });
+    } catch {
+      notify('เกิดข้อผิดพลาดในการรีเฟรชข้อมูล', { title: 'แจ้งเตือน', tone: 'danger' });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Reset to initial mock cases
+  const resetToMockData = () => {
+    const fresh: CaseItem[] = JSON.parse(JSON.stringify(INITIAL_CASES));
+    setCases(fresh);
+    caseSeq.current = INITIAL_CASES.length;
+    if (selectedCase) {
+      const match = fresh.find(c => c.id === selectedCase.id);
+      setSelectedCase(match || null);
+    }
+    notify('รีเซ็ตข้อมูลเคสและสถานะทั้งหมดกลับสู่ค่าเริ่มต้นเรียบร้อยแล้ว', {
+      title: 'รีเซ็ตข้อมูลเริ่มต้น',
+      tone: 'default'
+    });
+  };
+
   // Filtered cases based on role and active search/status filters
   const dateScopedCases = cases.filter(c => matchesDateFilter(c.createdAt, dateFilter));
 
@@ -722,6 +858,11 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
         closeCase,
         addChatMessage,
         sendOfficialEmail,
+        logPhoneCallAttempt,
+        confirmRecipientReceived,
+        isRefreshing,
+        refreshData,
+        resetToMockData,
         counts
       }}
     >

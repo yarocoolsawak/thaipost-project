@@ -4,6 +4,7 @@ import type { CaseItem } from '../../types/case';
 import { CaseDetailModal } from '../common/CaseDetailModal';
 import { SlaBadge } from '../common/SlaBadge';
 import { IssueDisplay } from '../common/IssueBadge';
+import { CaseStatusBadge } from '../common/StatusBadge';
 import { ReportedAtCell } from '../common/CecAssignment';
 import { DateRangeFilter } from '../common/DateRangeFilter';
 import { rowOpenProps } from '../../utils/rowOpen';
@@ -146,7 +147,7 @@ export const BranchWorkspace: React.FC = () => {
                         />
                       </td>
                       <td>
-                        <span className={`status-badge ${item.status}`}>{item.status}</span>
+                        <CaseStatusBadge status={item.status} />
                       </td>
                       <td>
                         {latestBranchLog ? (
@@ -178,6 +179,10 @@ export const BranchWorkspace: React.FC = () => {
                           deadlineIso={item.slaDeadline}
                           isExceeded={item.isSlaExceeded}
                           status={item.status}
+                          bagOpenedAt={item.bagOpenedAt || item.parcelInfo?.bagOpenedAt}
+                          targetDays={item.slaTargetDays}
+                          routeType={item.slaRouteType}
+                          retentionDeadline={item.retentionDeadline}
                         />
                       </td>
                       <td style={{ textAlign: 'right' }}>

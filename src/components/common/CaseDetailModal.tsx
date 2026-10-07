@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import type { CaseItem } from '../../types/case';
 import { useCases } from '../../context/CaseContext';
-import { confirmDialog } from '../../utils/dialog';
 import { SlaBadge } from './SlaBadge';
 import { TrackingTimeline } from './TrackingTimeline';
 import { DuplicateChip, OrderRefChip } from './CecAssignment';
+import { CloseCaseModal } from './CloseCaseModal';
+import { evaluateCaseSla, formatThaiDate } from '../../utils/slaCalculator';
+import { CaseStatusBadge, getCategoryShortLabel, formatPostalStatus } from './StatusBadge';
 import {
   X,
   Building2,
@@ -19,7 +21,11 @@ import {
   CornerDownRight,
   Mail,
   Paperclip,
-  FileText
+  FileText,
+  Camera,
+  PhoneCall,
+  Clock,
+  ShieldCheck
 } from 'lucide-react';
 
 interface CaseDetailModalProps {
@@ -35,11 +41,15 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
   onOpenReviewAnswer,
   onOpenEscalateBranch
 }) => {
-  const { role, addChatMessage, closeCase, cases } = useCases();
+  const { role, addChatMessage, cases } = useCases();
   const caseItem = cases.find(c => c.id === initialCaseItem.id) || initialCaseItem;
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TRACKING' | 'CHAT' | 'EMAILS' | 'BRANCH' | 'AUDIT'>('OVERVIEW');
   const [newChatText, setNewChatText] = useState('');
   const [isInternalNote, setIsInternalNote] = useState(false);
+  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+
+  const slaInfo = evaluateCaseSla(caseItem);
 
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,16 +70,8 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
     setNewChatText('');
   };
 
-  const handleCloseCaseAction = async () => {
-    const ok = await confirmDialog(`ต้องการปิดเคส ${caseItem.id} ใช่หรือไม่?`, {
-      title: 'ปิดเคส',
-      confirmLabel: 'ปิดเคส',
-      tone: 'success'
-    });
-    if (ok) {
-      closeCase(caseItem.id, 'เจ้าหน้าที่ตรวจสอบและดำเนินการปิดเคสเรียบร้อย');
-      onClose();
-    }
+  const handleCloseCaseAction = () => {
+    setIsCloseModalOpen(true);
   };
 
   return (
@@ -77,24 +79,24 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
       <div className="modal-card large" onClick={e => e.stopPropagation()}>
         {/* Modal Header */}
         <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--thp-dark)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--thp-dark)' }}>
               {caseItem.id}
             </span>
             <span
               style={{
                 fontFamily: 'var(--font-en)',
                 fontWeight: 700,
-                fontSize: '1.1rem',
+                fontSize: '1rem',
                 color: 'var(--thp-red)',
                 background: '#FEE2E2',
-                padding: '0.2rem 0.6rem',
+                padding: '0.15rem 0.55rem',
                 borderRadius: '6px'
               }}
             >
               {caseItem.trackingNumber}
             </span>
-            <span className={`status-badge ${caseItem.status}`}>{caseItem.status}</span>
+            <CaseStatusBadge status={caseItem.status} />
             <OrderRefChip caseItem={caseItem} />
             <DuplicateChip caseItem={caseItem} />
             <SlaBadge
@@ -103,7 +105,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
               status={caseItem.status}
             />
           </div>
-          <button type="button" className="close-btn" onClick={onClose}>
+          <button type="button" className="close-btn" onClick={onClose} title="ปิด">
             <X size={20} />
           </button>
         </div>
@@ -114,9 +116,10 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '0.25rem',
-            padding: '0.5rem 1.5rem 0',
+            padding: '0.4rem 1.25rem 0',
             background: '#F8FAFC',
-            borderBottom: '1px solid var(--thp-border)'
+            borderBottom: '1px solid var(--thp-border)',
+            overflowX: 'auto'
           }}
         >
           <button
@@ -124,21 +127,21 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             className={`status-tab-btn ${activeTab === 'OVERVIEW' ? 'active' : ''}`}
             onClick={() => setActiveTab('OVERVIEW')}
           >
-            <Building2 size={15} /> สรุปเคส & ข้อมูลพัสดุ
+            <Building2 size={14} /> สรุปเคส
           </button>
           <button
             type="button"
             className={`status-tab-btn ${activeTab === 'TRACKING' ? 'active' : ''}`}
             onClick={() => setActiveTab('TRACKING')}
           >
-            <Truck size={15} /> สถานะพัสดุ QMS ({caseItem.parcelInfo.events?.length || 0})
+            <Truck size={14} /> สถานะพัสดุ ({caseItem.parcelInfo.events?.length || 0})
           </button>
           <button
             type="button"
             className={`status-tab-btn ${activeTab === 'CHAT' ? 'active' : ''}`}
             onClick={() => setActiveTab('CHAT')}
           >
-            <MessageSquare size={15} /> ประวัติแชท ({caseItem.chatHistory?.length || 0})
+            <MessageSquare size={14} /> แชท ({caseItem.chatHistory?.length || 0})
           </button>
           <button
             type="button"
@@ -155,21 +158,21 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                 : {}
             }
           >
-            <Mail size={15} /> อีเมลคำร้อง & เอกสาร ({caseItem.emails?.length || 0})
+            <Mail size={14} /> อีเมล ({caseItem.emails?.length || 0})
           </button>
           <button
             type="button"
             className={`status-tab-btn ${activeTab === 'BRANCH' ? 'active' : ''}`}
             onClick={() => setActiveTab('BRANCH')}
           >
-            <PhoneForwarded size={15} /> บันทึกติดต่อสาขา ({caseItem.branchContactLogs?.length || 0})
+            <PhoneForwarded size={14} /> ติดต่อสาขา ({caseItem.branchContactLogs?.length || 0})
           </button>
           <button
             type="button"
             className={`status-tab-btn ${activeTab === 'AUDIT' ? 'active' : ''}`}
             onClick={() => setActiveTab('AUDIT')}
           >
-            <History size={15} /> Audit & Dispatch Log ({caseItem.activityLogs?.length || 0})
+            <History size={14} /> ประวัติ ({caseItem.activityLogs?.length || 0})
           </button>
         </div>
 
@@ -177,53 +180,55 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         <div className="modal-body">
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'OVERVIEW' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {/* Top Banner: CEC Answer Waiting Review if applicable */}
               {caseItem.status === 'WAITING_CENTRAL_REVIEW' && caseItem.cecReply && (
                 <div
                   style={{
                     background: '#EFF6FF',
-                    border: '2px solid #3B82F6',
-                    borderRadius: '12px',
-                    padding: '1.25rem',
+                    border: '1.5px solid #3B82F6',
+                    borderRadius: '10px',
+                    padding: '0.85rem 1rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.6rem'
+                    gap: '0.5rem'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ fontWeight: 700, color: '#1D4ED8', fontSize: '0.95rem' }}>
-                      ⚡ คำตอบจาก CEC รอ ปณ.ส่วนกลาง ตรวจสอบก่อนส่งกลับร้านค้า (FR 07)
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    <div style={{ fontWeight: 700, color: '#1D4ED8', fontSize: '0.92rem' }}>
+                      ⚡ คำตอบจาก CEC (รอตรวจสอบก่อนตอบร้านค้า)
                     </div>
-                    <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                    <span style={{ fontSize: '0.74rem', color: '#64748B' }}>
                       ตอบเมื่อ: {new Date(caseItem.cecReply.repliedAt).toLocaleTimeString('th-TH')} โดย {caseItem.cecReply.repliedBy}
                     </span>
                   </div>
                   <div
                     style={{
                       background: '#FFFFFF',
-                      padding: '0.85rem',
+                      padding: '0.7rem 0.85rem',
                       borderRadius: '8px',
                       border: '1px solid #BFDBFE',
-                      fontSize: '0.9rem',
-                      lineHeight: 1.5
+                      fontSize: '0.88rem',
+                      lineHeight: 1.45,
+                      color: '#1E293B'
                     }}
                   >
                     "{caseItem.cecReply.answer}"
                   </div>
                   {caseItem.cecReply.branchNotes && (
-                    <div style={{ fontSize: '0.82rem', color: '#4B5563' }}>
+                    <div style={{ fontSize: '0.8rem', color: '#4B5563' }}>
                       <strong>หมายเหตุประสานงานสาขา:</strong> {caseItem.cecReply.branchNotes}
                     </div>
                   )}
                   {role === 'CENTRAL' && onOpenReviewAnswer && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.15rem' }}>
                       <button
                         type="button"
                         className="btn-primary"
+                        style={{ padding: '0.4rem 0.85rem', fontSize: '0.82rem' }}
                         onClick={() => onOpenReviewAnswer(caseItem)}
                       >
-                        <CheckCircle2 size={16} /> ตรวจสอบคำตอบ & ส่งให้ร้านค้า
+                        <CheckCircle2 size={15} /> ตรวจคำตอบ & ส่งร้านค้า
                       </button>
                     </div>
                   )}
@@ -231,31 +236,31 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
               )}
 
               {/* Grid 2 Cols: Customer Request vs Postal Info */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem' }}>
                 {/* Inquiry Box */}
                 <div
                   style={{
                     background: '#FFFFFF',
                     border: '1px solid var(--thp-border)',
-                    borderRadius: '12px',
-                    padding: '1.25rem',
+                    borderRadius: '10px',
+                    padding: '1rem 1.15rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.75rem'
+                    gap: '0.65rem'
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--thp-dark)' }}>
-                    รายละเอียดการรับเรื่อง (Customer Inquiry)
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--thp-dark)' }}>
+                    ข้อมูลคำร้องจากร้านค้า
                   </div>
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '120px 1fr',
-                      gap: '0.4rem',
-                      fontSize: '0.85rem'
+                      gridTemplateColumns: '100px 1fr',
+                      gap: '0.35rem',
+                      fontSize: '0.84rem'
                     }}
                   >
-                    <span style={{ color: 'var(--thp-muted)' }}>ร้านค้า (MyOrder):</span>
+                    <span style={{ color: 'var(--thp-muted)' }}>ร้านค้า:</span>
                     <strong>{caseItem.companyName}</strong>
 
                     <span style={{ color: 'var(--thp-muted)' }}>ผู้แจ้ง:</span>
@@ -265,45 +270,54 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                     <span style={{ color: '#0F766E', fontWeight: 600 }}>{caseItem.myOrderRef.orderId}</span>
 
                     <span style={{ color: 'var(--thp-muted)' }}>หมวดปัญหา:</span>
-                    <span className="category-chip" style={{ width: 'fit-content' }}>
-                      {caseItem.category}
-                    </span>
-
-                    <span style={{ color: 'var(--thp-muted)' }}>ระดับความเร่งด่วน:</span>
                     <span
                       style={{
+                        width: 'fit-content',
+                        fontSize: '0.78rem',
                         fontWeight: 700,
-                        color:
-                          caseItem.urgency === 'CRITICAL'
-                            ? '#DC2626'
-                            : caseItem.urgency === 'HIGH'
-                            ? '#EA580C'
-                            : '#16A34A'
+                        padding: '0.12rem 0.5rem',
+                        borderRadius: '4px',
+                        background: '#F1F5F9',
+                        color: '#334155',
+                        border: '1px solid #E2E8F0'
                       }}
                     >
-                      {caseItem.urgency}
+                      {getCategoryShortLabel(caseItem.category)}
                     </span>
 
-                    <span style={{ color: 'var(--thp-muted)' }}>สร้างเมื่อ:</span>
+                    <span style={{ color: 'var(--thp-muted)' }}>ความเร่งด่วน:</span>
                     <span>
-                      <Calendar size={13} style={{ display: 'inline', marginRight: '4px' }} />
+                      {caseItem.urgency === 'CRITICAL' ? (
+                        <span style={{ color: '#DC2626', fontWeight: 700 }}>⚡ ด่วนที่สุด</span>
+                      ) : caseItem.urgency === 'HIGH' ? (
+                        <span style={{ color: '#EA580C', fontWeight: 700 }}>ด่วน</span>
+                      ) : (
+                        <span style={{ color: '#16A34A', fontWeight: 600 }}>ปกติ</span>
+                      )}
+                    </span>
+
+                    <span style={{ color: 'var(--thp-muted)' }}>เวลาแจ้ง:</span>
+                    <span style={{ fontSize: '0.8rem' }}>
+                      <Calendar size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px' }} />
                       {new Date(caseItem.createdAt).toLocaleString('th-TH')}
                     </span>
                   </div>
 
-                  <div style={{ marginTop: '0.5rem' }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--thp-muted)' }}>
+                  <div style={{ marginTop: '0.25rem', borderTop: '1px solid #F1F5F9', paddingTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--thp-muted)', marginBottom: '0.25rem' }}>
                       ข้อความที่ร้านค้าแจ้ง:
                     </div>
                     <div
                       style={{
-                        marginTop: '0.25rem',
-                        padding: '0.75rem',
+                        padding: '0.65rem 0.8rem',
                         background: '#F8FAFC',
                         borderRadius: '8px',
                         border: '1px solid #E2E8F0',
-                        fontSize: '0.88rem',
-                        lineHeight: 1.5
+                        fontSize: '0.85rem',
+                        lineHeight: 1.45,
+                        color: 'var(--thp-dark)',
+                        maxHeight: '120px',
+                        overflowY: 'auto'
                       }}
                     >
                       {caseItem.customerInquiry}
@@ -316,55 +330,228 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                   style={{
                     background: '#FFFFFF',
                     border: '1px solid var(--thp-border)',
-                    borderRadius: '12px',
-                    padding: '1.25rem',
+                    borderRadius: '10px',
+                    padding: '1rem 1.15rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.75rem'
+                    gap: '0.65rem'
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--thp-dark)' }}>
-                    ข้อมูลพัสดุ ปณท (จากระบบ QMS)
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--thp-dark)' }}>
+                    ข้อมูลพัสดุ ปณท
                   </div>
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '110px 1fr',
-                      gap: '0.4rem',
-                      fontSize: '0.85rem'
+                      gridTemplateColumns: '95px 1fr',
+                      gap: '0.35rem',
+                      fontSize: '0.84rem'
                     }}
                   >
+                    <span style={{ color: 'var(--thp-muted)' }}>สถานะพัสดุ:</span>
+                    <strong style={{ color: caseItem.parcelInfo.currentPostalStatus?.includes('สำเร็จ') ? '#059669' : 'var(--thp-dark)' }}>
+                      {formatPostalStatus(caseItem.parcelInfo.currentPostalStatus)}
+                    </strong>
+
                     <span style={{ color: 'var(--thp-muted)' }}>ต้นทาง:</span>
                     <span>{caseItem.parcelInfo.originPostOffice}</span>
 
                     <span style={{ color: 'var(--thp-muted)' }}>ปลายทาง:</span>
                     <strong style={{ color: '#B91C1C' }}>{caseItem.parcelInfo.destPostOffice}</strong>
 
-                    <span style={{ color: 'var(--thp-muted)' }}>ผู้รับปลายทาง:</span>
-                    <span>{caseItem.parcelInfo.receiverName}</span>
+                    <span style={{ color: 'var(--thp-muted)' }}>ผู้รับ:</span>
+                    <span>{caseItem.parcelInfo.receiverName} ({caseItem.parcelInfo.receiverPhone})</span>
 
-                    <span style={{ color: 'var(--thp-muted)' }}>เบอร์โทรผู้รับ:</span>
-                    <span>{caseItem.parcelInfo.receiverPhone}</span>
-
-                    <span style={{ color: 'var(--thp-muted)' }}>กลุ่ม CEC ที่ดูแล:</span>
+                    <span style={{ color: 'var(--thp-muted)' }}>กลุ่ม CEC:</span>
                     <span style={{ color: '#4338CA', fontWeight: 600 }}>
-                      {caseItem.assignedCecName || 'รอระบุ CEC (รอ QMS ยืนยันพื้นที่ปลายทาง)'}
+                      {caseItem.assignedCecName || 'รอระบุ CEC'}
                     </span>
 
-                    <span style={{ color: 'var(--thp-muted)' }}>ผู้เซ็นรับ (POD):</span>
+                    <span style={{ color: 'var(--thp-muted)' }}>ผู้เซ็นรับ:</span>
                     <span style={{ fontWeight: 600, color: caseItem.parcelInfo.signerName ? '#059669' : '#94A3B8' }}>
                       {caseItem.parcelInfo.signerName || 'ยังไม่มีผู้เซ็นรับ'}
                     </span>
                   </div>
 
-                  <div style={{ marginTop: '0.5rem', borderTop: '1px solid #F1F5F9', paddingTop: '0.5rem' }}>
+                  <div style={{ marginTop: '0.25rem', borderTop: '1px solid #F1F5F9', paddingTop: '0.5rem' }}>
                     <span style={{ fontSize: '0.78rem', color: 'var(--thp-muted)' }}>ที่อยู่จัดส่ง:</span>
-                    <p style={{ fontSize: '0.82rem', color: 'var(--thp-slate)', marginTop: '2px' }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--thp-slate)', marginTop: '2px', lineHeight: 1.35 }}>
                       {caseItem.parcelInfo.receiverAddress}
                     </p>
                   </div>
                 </div>
               </div>
+
+              {/* Row: SLA Breakdown Card & Proof Evidence Card */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem' }}>
+                {/* 1. SLA Breakdown Card */}
+                <div
+                  style={{
+                    background: '#FFFFFF',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '10px',
+                    padding: '0.9rem 1.1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontSize: '0.88rem', color: 'var(--thp-dark)' }}>
+                      <Clock size={15} color="var(--thp-red)" />
+                      <span>กำหนดเวลา SLA</span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        padding: '0.12rem 0.45rem',
+                        borderRadius: '4px',
+                        background: slaInfo.targetDays === 3 ? '#EFF6FF' : '#FDF4FF',
+                        color: slaInfo.targetDays === 3 ? '#1D4ED8' : '#86198F',
+                        border: `1px solid ${slaInfo.targetDays === 3 ? '#BFDBFE' : '#F0ABFC'}`
+                      }}
+                    >
+                      {slaInfo.targetDays === 3 ? 'กทม./ภาคเดียวกัน (3 วัน)' : 'ข้ามจังหวัด (3-5 วัน)'}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '0.3rem', fontSize: '0.82rem' }}>
+                    <span style={{ color: 'var(--thp-muted)' }}>เปิดถุง:</span>
+                    <strong style={{ color: '#0F172A' }}>{formatThaiDate(slaInfo.bagOpenedAt, 'long')}</strong>
+
+                    <span style={{ color: 'var(--thp-muted)' }}>ครบกำหนด:</span>
+                    <span>{formatThaiDate(slaInfo.slaDeadline, 'long')}</span>
+
+                    <span style={{ color: 'var(--thp-muted)' }}>เก็บรักษา:</span>
+                    <span style={{ color: '#047857', fontWeight: 600 }}>
+                      ถึง {formatThaiDate(slaInfo.retentionDeadline, 'short')}
+                      <span style={{ fontSize: '0.74rem', color: '#64748B', marginLeft: '4px' }}>
+                        (เหลือ {slaInfo.retentionDaysLeft} วัน)
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Proof Evidence (POD) Card */}
+                <div
+                  style={{
+                    background: '#FFFFFF',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '10px',
+                    padding: '0.9rem 1.1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontSize: '0.88rem', color: 'var(--thp-dark)' }}>
+                      <Camera size={15} color="#0284C7" />
+                      <span>หลักฐานนำจ่าย (POD)</span>
+                    </div>
+                    {caseItem.deliveryProofPhotoUrl || caseItem.parcelInfo?.deliveryProofPhotoUrl ? (
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#16A34A', background: '#DCFCE7', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                        มีภาพหลักฐาน
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94A3B8', background: '#F1F5F9', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                        ยังไม่มีภาพถ่าย
+                      </span>
+                    )}
+                  </div>
+
+                  {caseItem.deliveryProofPhotoUrl || caseItem.parcelInfo?.deliveryProofPhotoUrl ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <img
+                        src={caseItem.deliveryProofPhotoUrl || caseItem.parcelInfo?.deliveryProofPhotoUrl}
+                        alt="POD"
+                        onClick={() => setPreviewPhotoUrl(caseItem.deliveryProofPhotoUrl || caseItem.parcelInfo?.deliveryProofPhotoUrl || null)}
+                        style={{
+                          width: '64px',
+                          height: '46px',
+                          objectFit: 'cover',
+                          borderRadius: '6px',
+                          border: '1px solid #CBD5E1',
+                          cursor: 'pointer'
+                        }}
+                        title="คลิกเพื่อดูภาพขยาย"
+                      />
+                      <div style={{ fontSize: '0.8rem', color: 'var(--thp-slate)' }}>
+                        <div style={{ fontWeight: 600, color: '#15803D' }}>มีภาพถ่ายยืนยันนำจ่าย</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--thp-muted)' }}>คลิกดูภาพขยาย</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--thp-muted)', lineHeight: 1.4 }}>
+                      ยังไม่มีภาพถ่ายในระบบ (โทรยืนยันกับผู้รับก่อนปิดเคส)
+                    </div>
+                  )}
+
+                  {caseItem.recipientConfirmedReceived && (
+                    <div style={{ fontSize: '0.74rem', color: '#166534', background: '#F0FDF4', padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #BBF7D0', fontWeight: 600 }}>
+                      ✓ ผู้รับยืนยันได้รับสินค้าแล้ว
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. Recipient Calls Log Card */}
+              {caseItem.callAttempts && caseItem.callAttempts.length > 0 && (
+                <div
+                  style={{
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '10px',
+                    padding: '0.75rem 1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.45rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontSize: '0.85rem', color: 'var(--thp-dark)' }}>
+                      <PhoneCall size={14} color="var(--thp-red)" />
+                      <span>ประวัติโทรติดต่อผู้รับ</span>
+                    </div>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--thp-muted)' }}>
+                      {caseItem.callAttempts.length} ครั้ง
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.45rem' }}>
+                    {caseItem.callAttempts.map((call, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          background: '#FFFFFF',
+                          border: '1px solid #CBD5E1',
+                          borderRadius: '6px',
+                          padding: '0.45rem 0.6rem',
+                          fontSize: '0.76rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700 }}>
+                          <span style={{ color: call.callerRole === 'ADMIN' ? '#059669' : '#1E40AF' }}>
+                            ครั้งที่ {call.attemptNumber} ({call.callerName})
+                          </span>
+                          <span style={{ color: 'var(--thp-muted)', fontSize: '0.68rem' }}>
+                            {new Date(call.calledAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
+                          </span>
+                        </div>
+                        <div style={{ color: 'var(--thp-dark)', fontWeight: 600, marginTop: '2px' }}>
+                          {call.outcomeLabel}
+                        </div>
+                        {call.note && (
+                          <div style={{ color: 'var(--thp-muted)', fontSize: '0.7rem', marginTop: '2px' }}>
+                            {call.note}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Central Review Completed Banner once the answer is sent back to the shop */}
               {caseItem.centralReview && (
@@ -764,7 +951,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           {activeTab === 'AUDIT' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div style={{ fontSize: '0.82rem', color: 'var(--thp-muted)' }}>
-                บันทึกการทำงานของระบบและเจ้าหน้าที่ทุกระดับ (FR 10: Dispatch & Activity Log):
+                บันทึกกิจกรรมและการปฏิบัติงาน:
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {caseItem.activityLogs.map(act => (
@@ -803,7 +990,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         {/* Modal Footer with Role Context Actions */}
         <div className="modal-footer">
           <button type="button" className="btn-secondary" onClick={onClose}>
-            ปิดหน้าต่าง
+            ปิด
           </button>
 
           {/* Central Role Actions */}
@@ -815,7 +1002,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                   className="btn-primary"
                   onClick={() => onOpenReviewAnswer(caseItem)}
                 >
-                  <CheckCircle2 size={15} /> ตรวจสอบคำตอบ (Review Answer)
+                  <CheckCircle2 size={15} /> ตรวจคำตอบ
                 </button>
               )}
 
@@ -825,20 +1012,81 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                   className="btn-danger"
                   onClick={() => onOpenEscalateBranch(caseItem)}
                 >
-                  <PhoneForwarded size={15} /> โทรสายตรงสาขาปลายทาง
+                  <PhoneForwarded size={15} /> โทรตามสาขา
                 </button>
               )}
 
               {caseItem.status !== 'CLOSED' && (
-                <button type="button" className="btn-success" onClick={handleCloseCaseAction}>
-                  <CheckCircle2 size={15} /> ปิดเคส (Close Case)
+                <button
+                  type="button"
+                  className="btn-success"
+                  onClick={handleCloseCaseAction}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
+                >
+                  <ShieldCheck size={16} /> ตรวจเงื่อนไข & ปิดเคส
                 </button>
               )}
             </>
           )}
 
+          {/* Admin role can also initiate close case verification */}
+          {role === 'MYORDER_ADMIN' && caseItem.status !== 'CLOSED' && (
+            <button
+              type="button"
+              className="btn-success"
+              onClick={handleCloseCaseAction}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
+            >
+              <ShieldCheck size={16} /> ตรวจเงื่อนไข & ปิดเคส
+            </button>
+          )}
+
         </div>
       </div>
+
+      {/* Smart Pre-Close Verification Modal */}
+      {isCloseModalOpen && (
+        <CloseCaseModal
+          caseItem={caseItem}
+          onClose={() => setIsCloseModalOpen(false)}
+          onSuccess={() => {
+            setIsCloseModalOpen(false);
+            onClose();
+          }}
+        />
+      )}
+
+      {/* Image Zoom Modal */}
+      {previewPhotoUrl && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setPreviewPhotoUrl(null)}
+          style={{ zIndex: 1300, background: 'rgba(0,0,0,0.75)' }}
+        >
+          <div
+            className="modal-card"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '640px', background: '#FFFFFF', padding: '1.25rem', borderRadius: '12px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--thp-dark)' }}>
+                หลักฐานภาพถ่ายการนำส่งพัสดุ (POD)
+              </div>
+              <button type="button" className="close-btn" onClick={() => setPreviewPhotoUrl(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            <img
+              src={previewPhotoUrl}
+              alt="POD Zoom"
+              style={{ width: '100%', height: 'auto', borderRadius: '8px', border: '1px solid #CBD5E1' }}
+            />
+            <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--thp-muted)', textAlign: 'center' }}>
+              เลขพัสดุ: {caseItem.trackingNumber} • บันทึกเข้าระบบไปรษณีย์ไทย
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

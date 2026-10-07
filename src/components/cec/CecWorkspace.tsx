@@ -5,6 +5,7 @@ import { CEC_REGIONS } from '../../data/cecRegions';
 import { SlaBadge } from '../common/SlaBadge';
 import { CaseDetailModal } from '../common/CaseDetailModal';
 import { IssueDisplay } from '../common/IssueBadge';
+import { CaseStatusBadge } from '../common/StatusBadge';
 import { DuplicateChip, EmailCountChip, OrderRefChip, ReportedAtCell } from '../common/CecAssignment';
 import { DateRangeFilter } from '../common/DateRangeFilter';
 import { rowOpenProps } from '../../utils/rowOpen';
@@ -170,13 +171,17 @@ export const CecWorkspace: React.FC = () => {
                       />
                     </td>
                     <td>
-                      <span className={`status-badge ${item.status}`}>{item.status}</span>
+                      <CaseStatusBadge status={item.status} />
                     </td>
                     <td>
                       <SlaBadge
                         deadlineIso={item.slaDeadline}
                         isExceeded={item.isSlaExceeded}
                         status={item.status}
+                        bagOpenedAt={item.bagOpenedAt || item.parcelInfo?.bagOpenedAt}
+                        targetDays={item.slaTargetDays}
+                        routeType={item.slaRouteType}
+                        retentionDeadline={item.retentionDeadline}
                       />
                     </td>
                     <td style={{ textAlign: 'right' }}>

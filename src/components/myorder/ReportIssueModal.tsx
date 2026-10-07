@@ -18,13 +18,39 @@ interface ReportIssueModalProps {
 }
 
 const CATEGORY_OPTIONS: { value: IssueCategory; label: string }[] = [
+  { value: 'EXPEDITE_REQUEST', label: '⚡ ขอเร่งนำส่ง (ขอเร่งรัดนำจ่าย)' },
+  { value: 'CLOSE_WORK_REQUEST', label: '✓ แจ้งปิดงาน (ปลายทางได้รับสินค้าแล้วแต่สถานะยังไม่สำเร็จ)' },
+  { value: 'REDELIVERY_REQUEST', label: '🔄 เร่งนำจ่ายใหม่อีกครั้ง / นำจ่ายใหม่' },
+  { value: 'RETURN_OR_REVERSE', label: '↩️ แจ้งตีกลับ / ถอยสถานะตีกลับและแจ้งนำส่งใหม่' },
   { value: 'NOT_RECEIVED', label: 'สถานะส่งสำเร็จ แต่ลูกค้ายังไม่ได้รับของ' },
   { value: 'DELAYED_DELIVERY', label: 'พัสดุล่าช้า / สถานะไม่อัปเดต' },
-  { value: 'EXPEDITE_REQUEST', label: 'ขอเร่งนำส่ง' },
   { value: 'DAMAGED_PARCEL', label: 'พัสดุชำรุด / สินค้าเสียหาย' },
   { value: 'WRONG_BRANCH', label: 'ส่งผิดที่อยู่ / ผิดสาขา' },
   { value: 'CANNOT_LOCATE', label: 'ค้นหาพัสดุไม่พบ' },
-  { value: 'OTHER', label: 'อื่นๆ (ขอตีกลับ / แก้ที่อยู่)' }
+  { value: 'OTHER', label: 'อื่นๆ' }
+];
+
+const QUICK_TEMPLATES: { label: string; category: IssueCategory; text: string }[] = [
+  {
+    label: 'ตัวอย่าง 1: แจ้งปิดงาน',
+    category: 'CLOSE_WORK_REQUEST',
+    text: 'รบกวนประสานงานเจ้าหน้าที่ตรวจสอบปิดงานให้หน่อยนะครับ ร้านค้าสอบถามผู้รับปลายทางแจ้งได้รับพัสดุเรียบร้อยแล้ว สถานะยังไม่อัปเดตปิดงานตั้งแต่วันที่ 05/10/69 ครับ'
+  },
+  {
+    label: 'ตัวอย่าง 2: นำส่งใหม่',
+    category: 'REDELIVERY_REQUEST',
+    text: 'รบกวนประสานงานเจ้าหน้าที่ติดต่อนำส่งใหม่ให้หน่อยนะครับ ร้านค้าสอบถามผู้รับแจ้งว่ายังไม่ได้รับการติดต่อจากเจ้าหน้าที่ครับ'
+  },
+  {
+    label: 'ตัวอย่าง 3: ถอยสถานะตีกลับ',
+    category: 'RETURN_OR_REVERSE',
+    text: 'รบกวนประสานงานเจ้าหน้าที่ตรวจสอบถอยสถานะตีกลับและแจ้งนำส่งใหม่ให้หน่อยนะครับ สถานะพัสดุไม่อัปเดตเคลื่อนไหว ค้างระหว่างส่งต่อตั้งแต่วันที่ 03/10/69 และสถานะอัปเดตอีกครั้งวันนี้ 07/10/69 ส่งคืนต้นทางโดยยังไม่มีการนำจ่ายครับ ไม่ทราบว่าพัสดุติดปัญหาส่วนใดครับ'
+  },
+  {
+    label: 'ตัวอย่าง 4: เร่งนำส่ง (ปฏิเสธรับเท็จ)',
+    category: 'EXPEDITE_REQUEST',
+    text: 'รบกวนประสานงานเจ้าหน้าที่เร่งนำส่งให้หน่อยนะครับ เจ้าหน้าที่่ลงสถานะปฏิเสธรับ ผู้รับยืนยันไม่ได้ปฏิเสธรับและยังไม่มีเจ้าหน้าที่โทรติดต่อผู้รับปลายทางเลยครับ'
+  }
 ];
 
 export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClose, onReported, onFollowExisting }) => {
@@ -182,7 +208,37 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
             </div>
 
             <div className="form-group">
-              <label>รายละเอียดปัญหา:</label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                <label style={{ margin: 0 }}>รายละเอียดปัญหา:</label>
+                <span style={{ fontSize: '0.74rem', color: 'var(--thp-muted)' }}>คลิกข้อความตัวอย่างเพื่อกรอกเร็ว:</span>
+              </div>
+
+              {/* Quick Template Buttons */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
+                {QUICK_TEMPLATES.map((tpl, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setCategory(tpl.category);
+                      setDescription(tpl.text);
+                    }}
+                    style={{
+                      fontSize: '0.74rem',
+                      fontWeight: 600,
+                      padding: '0.2rem 0.55rem',
+                      borderRadius: '5px',
+                      background: category === tpl.category ? '#ECFDF5' : '#F1F5F9',
+                      border: `1px solid ${category === tpl.category ? '#A7F3D0' : '#CBD5E1'}`,
+                      color: category === tpl.category ? '#065F46' : '#334155',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {tpl.label}
+                  </button>
+                ))}
+              </div>
+
               <textarea
                 className="form-control"
                 rows={4}

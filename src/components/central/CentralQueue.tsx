@@ -8,6 +8,7 @@ import { BranchEscalationModal } from './BranchEscalationModal';
 import { CEC_REGIONS } from '../../data/cecRegions';
 import { exportCasesToExcel } from '../../utils/exportExcel';
 import { IssueDisplay } from '../common/IssueBadge';
+import { CaseStatusBadge } from '../common/StatusBadge';
 import { DestinationCell, DuplicateChip, EmailCountChip, OrderRefChip, ReportedAtCell } from '../common/CecAssignment';
 import { DateRangeFilter } from '../common/DateRangeFilter';
 import { rowOpenProps } from '../../utils/rowOpen';
@@ -30,6 +31,8 @@ export const CentralQueue: React.FC = () => {
     categoryFilter,
     setCategoryFilter,
     syncParcelTracking,
+    refreshData,
+    isRefreshing,
     counts
   } = useCases();
 
@@ -100,6 +103,19 @@ export const CentralQueue: React.FC = () => {
             >
               <FileSpreadsheet size={16} color="#059669" />
               <span>Export Excel</span>
+            </button>
+
+            {/* Quick Refresh Button */}
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => refreshData()}
+              disabled={isRefreshing}
+              style={{ fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.4rem', borderColor: '#CBD5E1', color: '#334155' }}
+              title="รีเฟรชข้อมูลพัสดุและคำนวณ SLA ล่าสุด"
+            >
+              <RefreshCw size={15} className={isRefreshing ? 'spin-animation' : ''} />
+              <span>{isRefreshing ? 'กำลังรีเฟรช...' : 'รีเฟรชข้อมูล'}</span>
             </button>
 
             {blankCecCases.length > 0 && (
@@ -291,7 +307,7 @@ export const CentralQueue: React.FC = () => {
 
                     {/* Status */}
                     <td>
-                      <span className={`status-badge ${item.status}`}>{item.status}</span>
+                      <CaseStatusBadge status={item.status} />
                     </td>
 
                     {/* SLA Timer */}
@@ -300,6 +316,10 @@ export const CentralQueue: React.FC = () => {
                         deadlineIso={item.slaDeadline}
                         isExceeded={item.isSlaExceeded}
                         status={item.status}
+                        bagOpenedAt={item.bagOpenedAt || item.parcelInfo?.bagOpenedAt}
+                        targetDays={item.slaTargetDays}
+                        routeType={item.slaRouteType}
+                        retentionDeadline={item.retentionDeadline}
                       />
                     </td>
 

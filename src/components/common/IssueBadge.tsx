@@ -1,7 +1,7 @@
 import React from 'react';
 import type { IssueCategory, UrgencyLevel } from '../../types/case';
 import { TruncatedText } from './TruncatedText';
-import { Clock, AlertTriangle, HelpCircle, PackageX, Compass, AlertCircle, Zap } from 'lucide-react';
+import { Clock, AlertTriangle, HelpCircle, PackageX, Compass, AlertCircle, Zap, CheckCircle2, RotateCcw, Undo2 } from 'lucide-react';
 
 interface IssueCategoryMeta {
   label: string;
@@ -13,6 +13,38 @@ interface IssueCategoryMeta {
 }
 
 export const ISSUE_CATEGORY_META: Record<IssueCategory, IssueCategoryMeta> = {
+  EXPEDITE_REQUEST: {
+    label: 'เร่งนำส่ง (ขอเร่งรัดนำจ่าย)',
+    shortLabel: 'เร่งนำส่ง',
+    icon: <Zap size={12} />,
+    bg: '#FFF7ED',
+    color: '#C2410C',
+    border: '#FED7AA'
+  },
+  CLOSE_WORK_REQUEST: {
+    label: 'แจ้งปิดงาน (ปลายทางได้รับสินค้าแล้วแต่สถานะยังไม่สำเร็จ)',
+    shortLabel: 'แจ้งปิดงาน',
+    icon: <CheckCircle2 size={12} />,
+    bg: '#ECFDF5',
+    color: '#047857',
+    border: '#A7F3D0'
+  },
+  REDELIVERY_REQUEST: {
+    label: 'เร่งนำจ่ายใหม่อีกครั้ง / นำจ่ายใหม่',
+    shortLabel: 'เร่งนำจ่ายใหม่',
+    icon: <RotateCcw size={12} />,
+    bg: '#EFF6FF',
+    color: '#1D4ED8',
+    border: '#BFDBFE'
+  },
+  RETURN_OR_REVERSE: {
+    label: 'แจ้งตีกลับ / ถอยสถานะตีกลับและแจ้งนำส่งใหม่',
+    shortLabel: 'แจ้งตีกลับ/ถอยสถานะ',
+    icon: <Undo2 size={12} />,
+    bg: '#FEF2F2',
+    color: '#B91C1C',
+    border: '#FECACA'
+  },
   DELAYED_DELIVERY: {
     label: 'พัสดุล่าช้าเกินกำหนด',
     shortLabel: 'พัสดุล่าช้า',
@@ -53,21 +85,13 @@ export const ISSUE_CATEGORY_META: Record<IssueCategory, IssueCategoryMeta> = {
     color: '#334155',
     border: '#CBD5E1'
   },
-  EXPEDITE_REQUEST: {
-    label: 'ขอเร่งนำส่ง',
-    shortLabel: 'เร่งนำส่ง',
-    icon: <Zap size={12} />,
-    bg: '#FFF7ED',
-    color: '#C2410C',
-    border: '#FED7AA'
-  },
   OTHER: {
-    label: 'อื่นๆ / ตีกลับ / แก้จ่าหน้า',
-    shortLabel: 'ตีกลับ/จ่าหน้า/อื่นๆ',
+    label: 'อื่นๆ / จ่าหน้า / ข้อสอบถาม',
+    shortLabel: 'อื่นๆ',
     icon: <AlertTriangle size={12} />,
-    bg: '#EFF6FF',
-    color: '#1E40AF',
-    border: '#BFDBFE'
+    bg: '#F8FAFC',
+    color: '#475569',
+    border: '#E2E8F0'
   }
 };
 
