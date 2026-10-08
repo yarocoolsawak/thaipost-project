@@ -7,7 +7,8 @@ import type { MyOrder } from '../../data/myOrders';
 import { KNOWN_PARCELS } from '../../services/trackTraceApi';
 import { useMyOrder } from '../../context/MyOrderContext';
 import type { ReportIssueResult } from '../../context/MyOrderContext';
-import { buildEmailDraft, DEFAULT_REQUEST_EMAIL_TO, EMAIL_REQUEST_TYPE_LABEL } from '../../utils/emailTemplates';
+import { buildEmailDraft, DEFAULT_REQUEST_EMAIL_TO, EMAIL_REQUEST_TYPE_LABEL, EMAIL_RULES } from '../../utils/emailTemplates';
+import { RequestEmailEditor, type EmailDraft } from './RequestEmailEditor';
 import { AlertTriangle, Paperclip, Send, X, Info, Mail } from 'lucide-react';
 
 interface ReportIssueModalProps {
@@ -21,7 +22,8 @@ const CATEGORY_OPTIONS: { value: IssueCategory; label: string }[] = [
   { value: 'EXPEDITE_REQUEST', label: '⚡ ขอเร่งนำส่ง (ขอเร่งรัดนำจ่าย)' },
   { value: 'CLOSE_WORK_REQUEST', label: '✓ แจ้งปิดงาน (ปลายทางได้รับสินค้าแล้วแต่สถานะยังไม่สำเร็จ)' },
   { value: 'REDELIVERY_REQUEST', label: '🔄 เร่งนำจ่ายใหม่อีกครั้ง / นำจ่ายใหม่' },
-  { value: 'RETURN_OR_REVERSE', label: '↩️ แจ้งตีกลับ / ถอยสถานะตีกลับและแจ้งนำส่งใหม่' },
+  { value: 'RETURN_OR_REVERSE', label: '↩️ แจ้งตีกลับ (ขอส่งคืนต้นทาง) — ต้องส่งอีเมล' },
+  { value: 'CHANGE_ADDRESS_REQUEST', label: '📍 ขอเปลี่ยนที่อยู่ / เบอร์โทรผู้รับ — ต้องส่งอีเมล' },
   { value: 'NOT_RECEIVED', label: 'สถานะส่งสำเร็จ แต่ลูกค้ายังไม่ได้รับของ' },
   { value: 'DELAYED_DELIVERY', label: 'พัสดุล่าช้า / สถานะไม่อัปเดต' },
   { value: 'DAMAGED_PARCEL', label: 'พัสดุชำรุด / สินค้าเสียหาย' },
@@ -42,8 +44,8 @@ const QUICK_TEMPLATES: { label: string; category: IssueCategory; text: string }[
     text: 'รบกวนประสานงานเจ้าหน้าที่ติดต่อนำส่งใหม่ให้หน่อยนะครับ ร้านค้าสอบถามผู้รับแจ้งว่ายังไม่ได้รับการติดต่อจากเจ้าหน้าที่ครับ'
   },
   {
-    label: 'ตัวอย่าง 3: ถอยสถานะตีกลับ',
-    category: 'RETURN_OR_REVERSE',
+    label: 'ตัวอย่าง 3: ยกเลิกตีกลับ นำส่งใหม่',
+    category: 'REDELIVERY_REQUEST',
     text: 'รบกวนประสานงานเจ้าหน้าที่ตรวจสอบถอยสถานะตีกลับและแจ้งนำส่งใหม่ให้หน่อยนะครับ สถานะพัสดุไม่อัปเดตเคลื่อนไหว ค้างระหว่างส่งต่อตั้งแต่วันที่ 03/10/69 และสถานะอัปเดตอีกครั้งวันนี้ 07/10/69 ส่งคืนต้นทางโดยยังไม่มีการนำจ่ายครับ ไม่ทราบว่าพัสดุติดปัญหาส่วนใดครับ'
   },
   {
@@ -72,9 +74,12 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
 
   const parcel = order.trackingNumber ? KNOWN_PARCELS[order.trackingNumber] : undefined;
 
-  // Optional official request email sent together with the report
-  const draftFor = (type: EmailRequestType, contact: string) =>
-    buildEmailDraft(type, {
+  // Official request email sent together with the report: required for some problem types, optional for the rest
+  const draftFor = (type: EmailRequestType, contact: string): EmailDraft => ({
+    to: DEFAULT_REQUEST_EMAIL_TO,
+    requestType: type,
+    attachments: [`หนังสือแจ้งคำร้อง_${order.trackingNumber}.pdf`, 'สำเนาใบเสร็จรับฝาก_ปณท.jpg'],
+    ...buildEmailDraft(type, {
       trackingNumber: order.trackingNumber || '',
       shopName: currentShop.name,
       contactPerson: contact || currentShop.ownerName,
@@ -82,24 +87,24 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
       destPostOffice: parcel?.destPostOffice,
       receiverName: order.customerName,
       receiverAddress: order.shippingAddress
-    });
+    })
+  });
+  const rule = EMAIL_RULES[category];
   const [includeEmail, setIncludeEmail] = useState(false);
-  const [emailType, setEmailType] = useState<EmailRequestType>('RETURN_PARCEL');
-  const [emailTo, setEmailTo] = useState(DEFAULT_REQUEST_EMAIL_TO);
-  const [emailCc, setEmailCc] = useState('');
-  const [emailSubject, setEmailSubject] = useState('');
-  const [emailBody, setEmailBody] = useState('');
-  const [emailAttachments, setEmailAttachments] = useState<string[]>([
-    `หนังสือแจ้งคำร้อง_${order.trackingNumber}.pdf`,
-    'สำเนาใบเสร็จรับฝาก_ปณท.jpg'
-  ]);
-  const [newEmailAttachment, setNewEmailAttachment] = useState('');
+  const [emailDraft, setEmailDraft] = useState<EmailDraft>(() => draftFor(rule?.type || 'RETURN_PARCEL', reporterName));
+  const emailOn = !!rule?.required || includeEmail;
+  const emailIncomplete = emailOn && (!emailDraft.subject.trim() || !emailDraft.body.trim());
 
-  const applyEmailDraft = (type: EmailRequestType) => {
-    const draft = draftFor(type, reporterName.trim());
-    setEmailType(type);
-    setEmailSubject(draft.subject);
-    setEmailBody(draft.body);
+  const changeCategory = (next: IssueCategory) => {
+    const nextRule = EMAIL_RULES[next];
+    if (nextRule) {
+      // Show the matching email straight away (it must be sent for required types)
+      setEmailDraft(draftFor(nextRule.type, reporterName.trim()));
+      setIncludeEmail(nextRule.required);
+    } else if (rule?.required) {
+      setIncludeEmail(false);
+    }
+    setCategory(next);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,15 +119,8 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
         reporterName: reporterName.trim() || currentShop.ownerName,
         attachments,
         forceNewCase: !!existingCase,
-        emailDispatch: includeEmail
-          ? {
-              to: emailTo || DEFAULT_REQUEST_EMAIL_TO,
-              cc: emailCc || undefined,
-              subject: emailSubject.trim(),
-              requestType: emailType,
-              body: emailBody.trim(),
-              attachments: emailAttachments
-            }
+        emailDispatch: emailOn
+          ? { ...emailDraft, to: emailDraft.to || DEFAULT_REQUEST_EMAIL_TO, subject: emailDraft.subject.trim(), body: emailDraft.body.trim() }
           : undefined
       });
       onReported(result);
@@ -191,7 +189,7 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
             <div className="form-grid-2">
               <div className="form-group">
                 <label>ประเภทปัญหา:</label>
-                <select className="form-control" value={category} onChange={e => setCategory(e.target.value as IssueCategory)}>
+                <select className="form-control" value={category} onChange={e => changeCategory(e.target.value as IssueCategory)}>
                   {CATEGORY_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
@@ -220,7 +218,7 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
                     key={idx}
                     type="button"
                     onClick={() => {
-                      setCategory(tpl.category);
+                      changeCategory(tpl.category);
                       setDescription(tpl.text);
                     }}
                     style={{
@@ -304,8 +302,8 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
             {/* Official request email sent together with the report */}
             <div
               style={{
-                background: includeEmail ? 'var(--myorder-teal-light)' : '#F8FAFC',
-                border: `1px solid ${includeEmail ? 'var(--myorder-teal-border)' : 'var(--thp-border)'}`,
+                background: emailOn ? 'var(--myorder-teal-light)' : '#F8FAFC',
+                border: `1px solid ${emailOn ? 'var(--myorder-teal-border)' : 'var(--thp-border)'}`,
                 borderRadius: '10px',
                 padding: '0.85rem 1rem',
                 display: 'flex',
@@ -313,107 +311,59 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
                 gap: '0.65rem'
               }}
             >
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.86rem', fontWeight: 700 }}>
-                <input
-                  type="checkbox"
-                  checked={includeEmail}
-                  onChange={e => {
-                    setIncludeEmail(e.target.checked);
-                    if (e.target.checked) applyEmailDraft(emailType);
-                  }}
-                  style={{ width: '16px', height: '16px', accentColor: 'var(--myorder-teal)' }}
-                />
-                <Mail size={16} color={includeEmail ? 'var(--myorder-teal)' : 'var(--thp-muted)'} />
-                <span>ส่งอีเมลคำร้องทางการถึง ปณท พร้อมแจ้งปัญหา (ขอตีกลับ / เปลี่ยนที่อยู่ / แนบหลักฐาน)</span>
-              </label>
+              {rule?.required ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.86rem', fontWeight: 700 }}>
+                  <Mail size={16} color="var(--myorder-teal)" />
+                  <span>อีเมลคำร้องถึง ปณท: {EMAIL_REQUEST_TYPE_LABEL[rule.type]} (ต้องส่ง)</span>
+                </div>
+              ) : (
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.86rem', fontWeight: 700 }}>
+                  <input
+                    type="checkbox"
+                    checked={includeEmail}
+                    onChange={e => setIncludeEmail(e.target.checked)}
+                    style={{ width: '16px', height: '16px', accentColor: 'var(--myorder-teal)' }}
+                  />
+                  <Mail size={16} color={includeEmail ? 'var(--myorder-teal)' : 'var(--thp-muted)'} />
+                  <span>
+                    {rule
+                      ? `ส่งอีเมลคำร้องถึง ปณท: ${EMAIL_REQUEST_TYPE_LABEL[rule.type]} (ไม่บังคับ)`
+                      : 'ส่งอีเมลคำร้องทางการถึง ปณท พร้อมแจ้งปัญหา (ขอตีกลับ / เปลี่ยนที่อยู่ / แนบหลักฐาน)'}
+                  </span>
+                </label>
+              )}
+              {rule && (
+                <div style={{ display: 'flex', gap: '0.4rem', fontSize: '0.8rem', color: rule.required ? '#065F46' : '#92400E' }}>
+                  <Info size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span>{rule.note}</span>
+                </div>
+              )}
 
-              {includeEmail && (
+              {emailOn && (
                 <>
-                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    {(Object.keys(EMAIL_REQUEST_TYPE_LABEL) as EmailRequestType[]).map(type => (
-                      <button
-                        key={type}
-                        type="button"
-                        className="btn-secondary"
-                        style={{
-                          fontSize: '0.78rem',
-                          padding: '0.3rem 0.65rem',
-                          background: emailType === type ? '#FFFFFF' : 'transparent',
-                          borderColor: emailType === type ? 'var(--myorder-teal)' : '#CBD5E1',
-                          color: emailType === type ? 'var(--myorder-teal-dark)' : 'inherit',
-                          fontWeight: emailType === type ? 700 : 500
-                        }}
-                        onClick={() => applyEmailDraft(type)}
-                      >
-                        {EMAIL_REQUEST_TYPE_LABEL[type]}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="form-grid-2">
-                    <div className="form-group">
-                      <label>ส่งถึง (To):</label>
-                      <input type="email" className="form-control" value={emailTo} onChange={e => setEmailTo(e.target.value)} />
-                    </div>
-                    <div className="form-group">
-                      <label>สำเนา (CC):</label>
-                      <input
-                        type="email"
-                        className="form-control"
-                        placeholder="อีเมลร้านค้า (ถ้ามี)"
-                        value={emailCc}
-                        onChange={e => setEmailCc(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label>หัวข้ออีเมล (Subject):</label>
-                    <input className="form-control" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} required />
-                  </div>
-                  <div className="form-group">
-                    <label>ข้อความคำร้องในอีเมล:</label>
-                    <textarea className="form-control" rows={4} value={emailBody} onChange={e => setEmailBody(e.target.value)} required />
-                  </div>
-                  <div className="form-group">
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <Paperclip size={13} /> เอกสารแนบคำร้อง ({emailAttachments.length} ไฟล์):
-                    </label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                      {emailAttachments.map((file, i) => (
-                        <span key={`${file}-${i}`} style={{ fontSize: '0.72rem', background: '#E2E8F0', padding: '2px 8px', borderRadius: '4px' }}>
-                          {file}
-                          <button
-                            type="button"
-                            onClick={() => setEmailAttachments(emailAttachments.filter((_, idx) => idx !== i))}
-                            style={{ border: 'none', background: 'transparent', color: '#EF4444', cursor: 'pointer', marginLeft: 4 }}
-                          >
-                            ×
-                          </button>
-                        </span>
+                  {!rule && (
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      {(Object.keys(EMAIL_REQUEST_TYPE_LABEL) as EmailRequestType[]).map(type => (
+                        <button
+                          key={type}
+                          type="button"
+                          className="btn-secondary"
+                          style={{
+                            fontSize: '0.78rem',
+                            padding: '0.3rem 0.65rem',
+                            background: emailDraft.requestType === type ? '#FFFFFF' : 'transparent',
+                            borderColor: emailDraft.requestType === type ? 'var(--myorder-teal)' : '#CBD5E1',
+                            color: emailDraft.requestType === type ? 'var(--myorder-teal-dark)' : 'inherit',
+                            fontWeight: emailDraft.requestType === type ? 700 : 500
+                          }}
+                          onClick={() => setEmailDraft({ ...emailDraft, ...draftFor(type, reporterName.trim()), to: emailDraft.to, cc: emailDraft.cc, attachments: emailDraft.attachments })}
+                        >
+                          {EMAIL_REQUEST_TYPE_LABEL[type]}
+                        </button>
                       ))}
                     </div>
-                    <div style={{ display: 'flex', gap: '0.35rem' }}>
-                      <input
-                        className="form-control"
-                        style={{ flex: 1, minWidth: 0, fontSize: '0.8rem', padding: '0.35rem 0.6rem' }}
-                        placeholder="พิมพ์ชื่อไฟล์ เช่น สำเนาบัตรประชาชน_ผู้รับ.jpg"
-                        value={newEmailAttachment}
-                        onChange={e => setNewEmailAttachment(e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        style={{ fontSize: '0.78rem', padding: '0.35rem 0.7rem' }}
-                        onClick={() => {
-                          if (newEmailAttachment.trim()) {
-                            setEmailAttachments([...emailAttachments, newEmailAttachment.trim()]);
-                            setNewEmailAttachment('');
-                          }
-                        }}
-                      >
-                        + แนบไฟล์
-                      </button>
-                    </div>
-                  </div>
+                  )}
+                  <RequestEmailEditor draft={emailDraft} onChange={setEmailDraft} />
                 </>
               )}
             </div>
@@ -425,15 +375,15 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
             <button type="button" className="btn-secondary" onClick={onClose}>
               ยกเลิก
             </button>
-            <button type="submit" className="btn-myorder" disabled={isSubmitting || blockedByDuplicate || !description.trim()}>
+            <button type="submit" className="btn-myorder" disabled={isSubmitting || blockedByDuplicate || !description.trim() || emailIncomplete}>
               <Send size={15} />
               {isSubmitting
                 ? 'กำลังส่งเรื่องเข้าระบบ ปณ....'
                 : existingCase
-                ? includeEmail
+                ? emailOn
                   ? 'สร้างเคสใหม่ + ส่งอีเมลคำร้อง'
                   : 'สร้างเคสใหม่'
-                : includeEmail
+                : emailOn
                 ? 'ส่งเรื่อง + อีเมลคำร้องถึงไปรษณีย์ไทย'
                 : 'ส่งเรื่องถึงไปรษณีย์ไทย'}
             </button>

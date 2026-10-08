@@ -3,20 +3,13 @@ import type { CaseItem } from '../../types/case';
 import { formatPostalStatus } from './StatusBadge';
 import { HelpCircle, ShoppingBag, Mail, Copy } from 'lucide-react';
 
-// CEC column: shows the assigned CEC, or a blank placeholder until the destination is confirmed
-export const CecCell: React.FC<{ caseItem: CaseItem; showHint?: boolean }> = ({ caseItem, showHint = false }) => {
+// CEC line: the assigned CEC, or a blank placeholder until QMS confirms the destination
+export const CecCell: React.FC<{ caseItem: CaseItem }> = ({ caseItem }) => {
   if (caseItem.assignedCecId === undefined) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        <span className="cec-blank-chip" title="ยังระบุ CEC ไม่ได้ ระบบจะใส่ให้อัตโนมัติเมื่อ QMS ยืนยันพื้นที่ปลายทางของพัสดุ">
-          <HelpCircle size={11} /> รอระบุ CEC
-        </span>
-        {showHint && (
-          <span style={{ fontSize: '0.68rem', color: 'var(--thp-muted)' }}>
-            พัสดุ: {formatPostalStatus(caseItem.parcelInfo.currentPostalStatus)}
-          </span>
-        )}
-      </div>
+      <span className="cec-blank-chip" title="ยังระบุ CEC ไม่ได้ ระบบจะใส่ให้อัตโนมัติเมื่อ QMS ยืนยันพื้นที่ปลายทางของพัสดุ">
+        <HelpCircle size={11} /> รอระบุ CEC
+      </span>
     );
   }
   return (
@@ -30,7 +23,7 @@ export const CecCell: React.FC<{ caseItem: CaseItem; showHint?: boolean }> = ({ 
 const stripZip = (name: string) => name.replace(/\s*\(\d{5}\)\s*$/, '').trim();
 
 // "ปลายทาง & กลุ่ม CEC" column: destination office, its postal code, and the CEC (short form)
-export const DestinationCell: React.FC<{ caseItem: CaseItem; showHint?: boolean }> = ({ caseItem, showHint = false }) => (
+export const DestinationCell: React.FC<{ caseItem: CaseItem }> = ({ caseItem }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
     <div style={{ fontWeight: 600, color: 'var(--thp-navy)' }}>
       {stripZip(caseItem.assignedBranchName || caseItem.parcelInfo.destPostOffice)}
@@ -39,7 +32,7 @@ export const DestinationCell: React.FC<{ caseItem: CaseItem; showHint?: boolean 
       รหัส{' '}
       <span style={{ fontFamily: 'var(--font-en)', fontWeight: 600, color: 'var(--thp-slate)' }}>{caseItem.parcelInfo.destZipCode}</span>
     </div>
-    <CecCell caseItem={caseItem} showHint={showHint} />
+    <CecCell caseItem={caseItem} />
   </div>
 );
 
@@ -141,3 +134,22 @@ export const TrackingCell: React.FC<{ caseItem: CaseItem }> = ({ caseItem }) => 
     <DuplicateChip caseItem={caseItem} />
   </>
 );
+
+// "สถานะล่าสุด" column: the parcel's latest QMS status; clicking it opens the parcel status tab of the case
+export const LatestStatusCell: React.FC<{ caseItem: CaseItem; onOpen: () => void }> = ({ caseItem, onOpen }) => {
+  const latest = caseItem.parcelInfo.events.reduce<(typeof caseItem.parcelInfo.events)[number] | undefined>(
+    (acc, ev) => (!acc || ev.timestamp > acc.timestamp ? ev : acc),
+    undefined
+  );
+  return (
+    <button type="button" className="latest-status-btn" onClick={onOpen} title="ดูสถานะพัสดุทั้งหมดจาก QMS">
+      <span className="latest-status-text">{formatPostalStatus(caseItem.parcelInfo.currentPostalStatus)}</span>
+      {latest && (
+        <span className="latest-status-meta">
+          {new Date(latest.timestamp).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          {latest.location ? ` • ${latest.location}` : ''}
+        </span>
+      )}
+    </button>
+  );
+};

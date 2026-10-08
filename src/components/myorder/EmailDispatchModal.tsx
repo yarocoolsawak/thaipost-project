@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { CaseItem, EmailRequestType } from '../../types/case';
 import { useCases } from '../../context/CaseContext';
 import { buildEmailDraft, DEFAULT_REQUEST_EMAIL_TO, EMAIL_REQUEST_TYPE_LABEL } from '../../utils/emailTemplates';
-import { Mail, X, Paperclip, Send, FileCheck, RotateCcw, MapPin, FileText, AlertTriangle, History } from 'lucide-react';
+import { Mail, X, Paperclip, Send, FileCheck, RotateCcw, MapPin, FileText, AlertTriangle, History, Truck } from 'lucide-react';
 
 interface EmailDispatchModalProps {
   caseItem: CaseItem;
@@ -25,6 +25,7 @@ const draftFor = (type: EmailRequestType, c: CaseItem, signature: string) =>
 const TYPE_BUTTONS: { type: EmailRequestType; label: string; icon: React.ReactNode; bg: string; border: string; color: string }[] = [
   { type: 'RETURN_PARCEL', label: 'แจ้งตีกลับพัสดุ', icon: <RotateCcw size={14} />, bg: '#FEF2F2', border: 'var(--thp-red)', color: 'var(--thp-red)' },
   { type: 'CHANGE_ADDRESS', label: 'เปลี่ยนจ่าหน้า/ที่อยู่', icon: <MapPin size={14} />, bg: '#EFF6FF', border: '#3B82F6', color: '#1D4ED8' },
+  { type: 'REDELIVER', label: 'ยกเลิกตีกลับ นำจ่ายต่อ', icon: <Truck size={14} />, bg: '#F0FDF4', border: '#22C55E', color: '#166534' },
   { type: 'SUBMIT_DOCS', label: 'ส่งหลักฐานยืนยัน', icon: <FileCheck size={14} />, bg: '#ECFDF5', border: '#10B981', color: '#047857' }
 ];
 

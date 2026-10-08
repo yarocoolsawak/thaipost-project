@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { useCases } from '../../context/CaseContext';
 import type { CaseItem } from '../../types/case';
 import { SlaBadge } from '../common/SlaBadge';
-import { CaseDetailModal } from '../common/CaseDetailModal';
+import { CaseDetailModal, type DetailTab } from '../common/CaseDetailModal';
 import { AnswerReviewModal } from './AnswerReviewModal';
 import { BranchEscalationModal } from './BranchEscalationModal';
 import { CEC_REGIONS } from '../../data/cecRegions';
 import { exportCasesToExcel } from '../../utils/exportExcel';
 import { ISSUE_CATEGORY_META, IssueDisplay, UrgencyBadge } from '../common/IssueBadge';
-import { CaseStatusBadge, getCaseStatusLabel, getCategoryShortLabel } from '../common/StatusBadge';
-import { DestinationCell, OrderRefChip, ReportedAtCell, TrackingCell } from '../common/CecAssignment';
+import { getCaseStatusLabel, getCategoryShortLabel } from '../common/StatusBadge';
+import { DestinationCell, LatestStatusCell, OrderRefChip, ReportedAtCell, TrackingCell } from '../common/CecAssignment';
 import { DateRangeFilter } from '../common/DateRangeFilter';
 import { SearchBox } from '../common/SearchBox';
 import { rowOpenProps } from '../../utils/rowOpen';
@@ -28,6 +28,7 @@ export const CentralQueue: React.FC = () => {
 
   // Modals state
   const [selectedCaseForDetail, setSelectedCaseForDetail] = useState<CaseItem | null>(null);
+  const [detailTab, setDetailTab] = useState<DetailTab>('OVERVIEW');
   const [reviewCase, setReviewCase] = useState<CaseItem | null>(null);
   const [escalateCase, setEscalateCase] = useState<CaseItem | null>(null);
   const [cecFilter, setCecFilter] = useState<string>('ALL');
@@ -171,7 +172,7 @@ export const CentralQueue: React.FC = () => {
                 <th>เลขพัสดุ</th>
                 <th>ปัญหา</th>
                 <SortTh label="เร่งด่วน" sortKey="urgency" sort={sort} onSort={toggle} />
-                <th>สถานะ</th>
+                <th>สถานะล่าสุด</th>
                 <SortTh label="SLA" sortKey="sla" sort={sort} onSort={toggle} />
                 <SortTh label="วันเวลาที่แจ้ง" sortKey="reportedAt" sort={sort} onSort={toggle} />
                 <th>ปลายทาง & CEC</th>
@@ -188,7 +189,7 @@ export const CentralQueue: React.FC = () => {
                 </tr>
               ) : (
                 sortCases(displayCases).map(item => (
-                  <tr key={item.id} {...rowOpenProps(() => setSelectedCaseForDetail(item))}>
+                  <tr key={item.id} {...rowOpenProps(() => { setDetailTab('OVERVIEW'); setSelectedCaseForDetail(item); })}>
                     <td>
                       <TrackingCell caseItem={item} />
                     </td>
@@ -199,7 +200,7 @@ export const CentralQueue: React.FC = () => {
                       <UrgencyBadge urgency={item.urgency} />
                     </td>
                     <td>
-                      <CaseStatusBadge status={item.status} />
+                      <LatestStatusCell caseItem={item} onOpen={() => { setDetailTab('TRACKING'); setSelectedCaseForDetail(item); }} />
                     </td>
                     <td>
                       <SlaBadge
@@ -216,7 +217,7 @@ export const CentralQueue: React.FC = () => {
                       <ReportedAtCell iso={item.createdAt} />
                     </td>
                     <td>
-                      <DestinationCell caseItem={item} showHint />
+                      <DestinationCell caseItem={item} />
                     </td>
                     <td>
                       <div style={{ fontWeight: 600, color: 'var(--thp-dark)' }}>{item.companyName}</div>
@@ -280,6 +281,7 @@ export const CentralQueue: React.FC = () => {
       {selectedCaseForDetail && (
         <CaseDetailModal
           caseItem={selectedCaseForDetail}
+          initialTab={detailTab}
           onClose={() => setSelectedCaseForDetail(null)}
           onOpenReviewAnswer={c => {
             setSelectedCaseForDetail(null);

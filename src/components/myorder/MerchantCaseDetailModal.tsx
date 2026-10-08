@@ -14,6 +14,7 @@ import { X, RefreshCw, CheckCircle2, MessageSquare, Truck, History, MapPin, Help
 interface MerchantCaseDetailModalProps {
   caseItem: CaseItem;
   onClose: () => void;
+  initialTab?: 'STATUS' | 'TRACKING';
 }
 
 const ACTOR_LABEL: Record<UserRole, string> = {
@@ -24,10 +25,10 @@ const ACTOR_LABEL: Record<UserRole, string> = {
   MYORDER_ADMIN: 'แอดมิน MyOrder'
 };
 
-export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = ({ caseItem: initial, onClose }) => {
+export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = ({ caseItem: initial, onClose, initialTab = 'STATUS' }) => {
   const { cases, role, addChatMessage, closeCase, syncParcelTracking } = useCases();
   const caseItem = cases.find(c => c.id === initial.id) || initial;
-  const [tab, setTab] = useState<'STATUS' | 'TRACKING'>('STATUS');
+  const [tab, setTab] = useState<'STATUS' | 'TRACKING'>(initialTab);
   const [followUp, setFollowUp] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');

@@ -4,12 +4,11 @@ import { useMyOrder } from '../../context/MyOrderContext';
 import type { CaseItem } from '../../types/case';
 import { IssueDisplay, UrgencyBadge } from '../common/IssueBadge';
 import { SlaBadge } from '../common/SlaBadge';
-import { DestinationCell, ReportedAtCell, TrackingCell } from '../common/CecAssignment';
+import { DestinationCell, LatestStatusCell, ReportedAtCell, TrackingCell } from '../common/CecAssignment';
 import { DateRangeFilter } from '../common/DateRangeFilter';
 import { SearchBox } from '../common/SearchBox';
 import { matchesCaseSearch } from '../../utils/caseSearch';
 import { rowOpenProps } from '../../utils/rowOpen';
-import { MerchantStatusBadge } from './CaseProgress';
 import { MerchantCaseDetailModal } from './MerchantCaseDetailModal';
 import { EmailDispatchModal } from './EmailDispatchModal';
 import { exportCasesToExcel } from '../../utils/exportExcel';
@@ -27,6 +26,7 @@ export const MyOrderAdminMonitor: React.FC = () => {
     setAdminShopFilter: setShopFilter
   } = useMyOrder();
   const [viewCase, setViewCase] = useState<CaseItem | null>(null);
+  const [detailTab, setDetailTab] = useState<'STATUS' | 'TRACKING'>('STATUS');
   const [emailCase, setEmailCase] = useState<CaseItem | null>(null);
   const { sort, sortCases, toggle } = useCaseSort();
 
@@ -87,7 +87,7 @@ export const MyOrderAdminMonitor: React.FC = () => {
                 <th>เลขพัสดุ</th>
                 <th>ปัญหา</th>
                 <SortTh label="เร่งด่วน" sortKey="urgency" sort={sort} onSort={toggle} />
-                <th>สถานะ</th>
+                <th>สถานะล่าสุด</th>
                 <SortTh label="SLA" sortKey="sla" sort={sort} onSort={toggle} />
                 <SortTh label="วันเวลาที่แจ้ง" sortKey="reportedAt" sort={sort} onSort={toggle} />
                 <th>ปลายทาง & CEC</th>
@@ -104,7 +104,7 @@ export const MyOrderAdminMonitor: React.FC = () => {
                 </tr>
               ) : (
                 sortCases(visible).map(c => (
-                  <tr key={c.id} {...rowOpenProps(() => setViewCase(c))}>
+                  <tr key={c.id} {...rowOpenProps(() => { setDetailTab('STATUS'); setViewCase(c); })}>
                     <td>
                       <TrackingCell caseItem={c} />
                     </td>
@@ -115,7 +115,7 @@ export const MyOrderAdminMonitor: React.FC = () => {
                       <UrgencyBadge urgency={c.urgency} />
                     </td>
                     <td>
-                      <MerchantStatusBadge status={c.status} />
+                      <LatestStatusCell caseItem={c} onOpen={() => { setDetailTab('TRACKING'); setViewCase(c); }} />
                     </td>
                     <td>
                       <SlaBadge
@@ -132,7 +132,7 @@ export const MyOrderAdminMonitor: React.FC = () => {
                       <ReportedAtCell iso={c.createdAt} />
                     </td>
                     <td>
-                      <DestinationCell caseItem={c} showHint />
+                      <DestinationCell caseItem={c} />
                     </td>
                     <td>
                       <div style={{ fontWeight: 600 }}>{c.myOrderRef.shopName}</div>
@@ -163,7 +163,7 @@ export const MyOrderAdminMonitor: React.FC = () => {
         </div>
       </div>
 
-      {viewCase && <MerchantCaseDetailModal caseItem={viewCase} onClose={() => setViewCase(null)} />}
+      {viewCase && <MerchantCaseDetailModal caseItem={viewCase} initialTab={detailTab} onClose={() => setViewCase(null)} />}
       {emailCase && <EmailDispatchModal caseItem={emailCase} onClose={() => setEmailCase(null)} />}
     </div>
   );

@@ -18,7 +18,8 @@ export type IssueCategory =
   | 'EXPEDITE_REQUEST'       // เร่งนำส่ง (ขอเร่งรัดนำจ่าย)
   | 'CLOSE_WORK_REQUEST'     // แจ้งปิดงาน (ปลายทางได้รับสินค้าแล้วแต่สถานะยังไม่สำเร็จ)
   | 'REDELIVERY_REQUEST'     // เร่งนำจ่ายใหม่อีกครั้ง / นำจ่ายใหม่
-  | 'RETURN_OR_REVERSE'      // แจ้งตีกลับ / ถอยสถานะตีกลับและแจ้งนำส่งใหม่
+  | 'RETURN_OR_REVERSE'      // แจ้งตีกลับ (ขอส่งคืนต้นทาง)
+  | 'CHANGE_ADDRESS_REQUEST' // ขอเปลี่ยนที่อยู่ / เบอร์โทรผู้รับปลายทาง
   | 'DELAYED_DELIVERY'       // พัสดุล่าช้าเกินกำหนด
   | 'NOT_RECEIVED'           // ผู้รับยังไม่ได้รับของ (สถานะขึ้นนำจ่ายสำเร็จ)
   | 'WRONG_BRANCH'           // พัสดุส่งผิดสาขา / ตีกลับผิดพลาด
@@ -209,7 +210,7 @@ export interface CaseItem {
   linkedDuplicateCaseIds?: string[];
 }
 
-export type EmailRequestType = 'RETURN_PARCEL' | 'CHANGE_ADDRESS' | 'SUBMIT_DOCS';
+export type EmailRequestType = 'RETURN_PARCEL' | 'CHANGE_ADDRESS' | 'REDELIVER' | 'SUBMIT_DOCS';
 
 // Who on the MyOrder side sent / reported something (the shop itself or MyOrder admin on its behalf)
 export type MyOrderActorRole = 'MERCHANT' | 'MYORDER_ADMIN';

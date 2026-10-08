@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useCases } from '../../context/CaseContext';
 import type { CaseItem } from '../../types/case';
-import { CaseDetailModal } from '../common/CaseDetailModal';
+import { CaseDetailModal, type DetailTab } from '../common/CaseDetailModal';
 import { SlaBadge } from '../common/SlaBadge';
 import { IssueDisplay, UrgencyBadge } from '../common/IssueBadge';
-import { CaseStatusBadge, getCaseStatusLabel } from '../common/StatusBadge';
-import { ReportedAtCell, TrackingCell } from '../common/CecAssignment';
+import { getCaseStatusLabel } from '../common/StatusBadge';
+import { LatestStatusCell, ReportedAtCell, TrackingCell } from '../common/CecAssignment';
 import { DateRangeFilter } from '../common/DateRangeFilter';
 import { SearchBox } from '../common/SearchBox';
 import { rowOpenProps } from '../../utils/rowOpen';
@@ -27,6 +27,7 @@ export const BranchWorkspace: React.FC = () => {
   } = useCases();
 
   const [selectedCaseDetail, setSelectedCaseDetail] = useState<CaseItem | null>(null);
+  const [detailTab, setDetailTab] = useState<DetailTab>('OVERVIEW');
   const [updateActionCase, setUpdateActionCase] = useState<CaseItem | null>(null);
   const [actionNote, setActionNote] = useState('');
   const { sort, sortCases, toggle } = useCaseSort();
@@ -106,7 +107,7 @@ export const BranchWorkspace: React.FC = () => {
                 <th>เลขพัสดุ</th>
                 <th>ปัญหา</th>
                 <SortTh label="เร่งด่วน" sortKey="urgency" sort={sort} onSort={toggle} />
-                <th>สถานะ</th>
+                <th>สถานะล่าสุด</th>
                 <SortTh label="SLA" sortKey="sla" sort={sort} onSort={toggle} />
                 <th>บันทึกจากส่วนกลาง</th>
                 <SortTh label="วันเวลาที่แจ้ง" sortKey="reportedAt" sort={sort} onSort={toggle} />
@@ -125,7 +126,7 @@ export const BranchWorkspace: React.FC = () => {
                 sortCases(branchCases).map(item => {
                   const latestBranchLog = item.branchContactLogs[0];
                   return (
-                    <tr key={item.id} {...rowOpenProps(() => setSelectedCaseDetail(item))}>
+                    <tr key={item.id} {...rowOpenProps(() => { setDetailTab('OVERVIEW'); setSelectedCaseDetail(item); })}>
                       <td>
                         <TrackingCell caseItem={item} />
                       </td>
@@ -136,7 +137,7 @@ export const BranchWorkspace: React.FC = () => {
                         <UrgencyBadge urgency={item.urgency} />
                       </td>
                       <td>
-                        <CaseStatusBadge status={item.status} />
+                        <LatestStatusCell caseItem={item} onOpen={() => { setDetailTab('TRACKING'); setSelectedCaseDetail(item); }} />
                       </td>
                       <td>
                         <SlaBadge
@@ -274,6 +275,7 @@ export const BranchWorkspace: React.FC = () => {
       {selectedCaseDetail && (
         <CaseDetailModal
           caseItem={selectedCaseDetail}
+          initialTab={detailTab}
           onClose={() => setSelectedCaseDetail(null)}
         />
       )}

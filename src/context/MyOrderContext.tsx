@@ -31,7 +31,11 @@ export interface BulkReportParams {
   urgency: UrgencyLevel;
   description: string;
   adminName: string;
+  // One official email per parcel; {เลขพัสดุ} {ร้านค้า} {ผู้รับ} are filled in for each line
+  emailTemplate?: Omit<EmailPayload, 'senderName'>;
 }
+
+export const BULK_EMAIL_TOKENS = { tracking: '{เลขพัสดุ}', shop: '{ร้านค้า}', receiver: '{ผู้รับ}' };
 
 export interface BulkLineResult {
   trackingNumber: string;
@@ -39,6 +43,7 @@ export interface BulkLineResult {
   reason?: string;
   caseItem?: CaseItem;
   shop?: MyOrderShop;
+  emailSent?: boolean;
 }
 
 export interface ReportIssueResult {
@@ -148,9 +153,18 @@ export const MyOrderProvider: React.FC<{ children: React.ReactNode }> = ({ child
             reason: line.status === 'NOT_SHIPPED' ? 'คำสั่งซื้อยังไม่จัดส่ง' : 'ไม่พบในคำสั่งซื้อ MyOrder'
           };
         }
+        const fill = (text: string) =>
+          text
+            .split(BULK_EMAIL_TOKENS.tracking).join(line.trackingNumber)
+            .split(BULK_EMAIL_TOKENS.shop).join(line.shop!.name)
+            .split(BULK_EMAIL_TOKENS.receiver).join(line.order!.customerName);
+        const email = params.emailTemplate
+          ? { ...params.emailTemplate, subject: fill(params.emailTemplate.subject), body: fill(params.emailTemplate.body) }
+          : undefined;
         if (line.status === 'EXISTING_CASE' && line.existingCase && !newCaseFor.has(line.trackingNumber)) {
           linkToExistingCase(line.existingCase.id, params.description, `${params.adminName} (Bulk)`, 'MYORDER_ADMIN');
-          return { trackingNumber: line.trackingNumber, outcome: 'LINKED', caseItem: line.existingCase, shop: line.shop };
+          if (email) sendOfficialEmail(line.existingCase.id, { ...email, senderName: params.adminName, sentByRole: 'MYORDER_ADMIN' });
+          return { trackingNumber: line.trackingNumber, outcome: 'LINKED', caseItem: line.existingCase, shop: line.shop, emailSent: !!email };
         }
         const caseItem = await createCase({
           trackingNumber: line.trackingNumber,
@@ -160,9 +174,10 @@ export const MyOrderProvider: React.FC<{ children: React.ReactNode }> = ({ child
           urgency: params.urgency,
           customerInquiry: params.description,
           reportedBy: { role: 'MYORDER_ADMIN', name: params.adminName },
+          emailDispatch: email,
           duplicateOfCaseId: line.existingCase?.id
         });
-        return { trackingNumber: line.trackingNumber, outcome: 'CREATED', caseItem, shop: line.shop };
+        return { trackingNumber: line.trackingNumber, outcome: 'CREATED', caseItem, shop: line.shop, emailSent: !!email };
       })
     );
 

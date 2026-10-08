@@ -1495,3 +1495,43 @@ button, input, select, textarea {
     gap: 1rem;
   }
 }
+
+/* "สถานะล่าสุด" cell: opens the parcel status tab */
+.latest-status-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  max-width: 150px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.latest-status-text {
+  font-weight: 600;
+  color: #1D4ED8;
+  text-decoration: underline;
+  text-decoration-color: #BFDBFE;
+  text-underline-offset: 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.latest-status-btn:hover .latest-status-text {
+  text-decoration-color: currentColor;
+}
+
+.latest-status-meta {
+  font-size: 0.7rem;
+  color: var(--thp-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

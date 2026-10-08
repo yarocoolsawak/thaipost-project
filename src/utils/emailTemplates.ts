@@ -1,10 +1,11 @@
-import type { EmailRequestType } from '../types/case';
+import type { EmailRequestType, IssueCategory } from '../types/case';
 
 export const DEFAULT_REQUEST_EMAIL_TO = 'thp_returns@thailandpost.com';
 
 export const EMAIL_REQUEST_TYPE_LABEL: Record<EmailRequestType, string> = {
   RETURN_PARCEL: 'ขอระงับการจ่ายและตีกลับต้นทาง',
   CHANGE_ADDRESS: 'ขอแก้ไขจ่าหน้า/ที่อยู่ผู้รับใหม่',
+  REDELIVER: 'ขอยกเลิกตีกลับและนำจ่ายต่อ',
   SUBMIT_DOCS: 'ส่งเอกสารหลักฐานประกอบคำร้อง'
 };
 
@@ -47,6 +48,18 @@ export function buildEmailDraft(type: EmailRequestType, ctx: EmailDraftContext):
         `ขอแสดงความนับถือ,\n${ctx.contactPerson}`
     };
   }
+  if (type === 'REDELIVER') {
+    return {
+      subject: `[คำร้องทางการ] ขอยกเลิกการตีกลับและนำจ่ายต่อ พัสดุ ${tr} (${ctx.shopName})`,
+      body:
+        `เรียน เจ้าหน้าที่ไปรษณีย์ไทย ส่วนงานนำจ่าย\n\n` +
+        `ทางร้าน ${ctx.shopName} ขอยกเลิกคำขอตีกลับพัสดุหมายเลข ${tr} และขอให้ดำเนินการนำจ่ายถึงผู้รับปลายทางตามเดิม\n\n` +
+        (ctx.destPostOffice ? `ปลายทาง: ${ctx.destPostOffice}\n` : '') +
+        (ctx.receiverName ? `ผู้รับ: ${ctx.receiverName}\n` : '') +
+        `\nรบกวนถอยสถานะตีกลับและเร่งนำส่งให้ด้วยครับ\n\n` +
+        `ขอแสดงความนับถือ,\n${ctx.contactPerson}`
+    };
+  }
   return {
     subject: ctx.caseId
       ? `[เอกสารเพิ่มเติม] ส่งหลักฐานประกอบเคส ${ctx.caseId} พัสดุ ${tr}`
@@ -57,3 +70,22 @@ export function buildEmailDraft(type: EmailRequestType, ctx: EmailDraftContext):
       `ขอแสดงความนับถือ,\n${ctx.contactPerson}`
   };
 }
+
+// Which problem types must (or may) come with an official email to ThaiPost
+export const EMAIL_RULES: Partial<Record<IssueCategory, { required: boolean; type: EmailRequestType; note: string }>> = {
+  RETURN_OR_REVERSE: {
+    required: true,
+    type: 'RETURN_PARCEL',
+    note: 'แจ้งตีกลับต้องส่งอีเมลคำร้องถึง ปณท ทุกครั้ง แก้ไขข้อความได้ก่อนส่ง'
+  },
+  CHANGE_ADDRESS_REQUEST: {
+    required: true,
+    type: 'CHANGE_ADDRESS',
+    note: 'ขอเปลี่ยนที่อยู่ / เบอร์โทรผู้รับต้องส่งอีเมลคำร้องถึง ปณท ทุกครั้ง กรอกข้อมูลใหม่ในข้อความก่อนส่ง'
+  },
+  REDELIVERY_REQUEST: {
+    required: false,
+    type: 'REDELIVER',
+    note: 'ถ้าเป็นการเปลี่ยนจากตีกลับมาเป็นเร่งนำส่ง ต้องส่งอีเมลด้วย'
+  }
+};

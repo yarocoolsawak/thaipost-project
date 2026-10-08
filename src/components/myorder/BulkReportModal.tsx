@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import type { CaseItem, IssueCategory, UrgencyLevel } from '../../types/case';
 import { MerchantCaseDetailModal } from './MerchantCaseDetailModal';
 import { useMyOrder } from '../../context/MyOrderContext';
-import type { BulkLinePreview, BulkLineResult } from '../../context/MyOrderContext';
+import { BULK_EMAIL_TOKENS, type BulkLinePreview, type BulkLineResult } from '../../context/MyOrderContext';
 import { parseTrackingList } from '../../utils/trackingParser';
 import { KNOWN_PARCELS } from '../../services/trackTraceApi';
 import { resolveCecFromParcel } from '../../data/cecRegions';
 import { ISSUE_CATEGORY_META } from '../common/IssueBadge';
-import { Layers, X, Send, ClipboardPaste, CheckCircle2, Link2, AlertCircle, AlertTriangle, Eye } from 'lucide-react';
+import { buildEmailDraft, DEFAULT_REQUEST_EMAIL_TO, EMAIL_REQUEST_TYPE_LABEL, EMAIL_RULES } from '../../utils/emailTemplates';
+import { RequestEmailEditor, type EmailDraft } from './RequestEmailEditor';
+import type { EmailRequestType } from '../../types/case';
+import { Layers, X, Send, ClipboardPaste, CheckCircle2, Link2, AlertCircle, AlertTriangle, Eye, Mail, Info } from 'lucide-react';
 
 interface BulkReportModalProps {
   onClose: () => void;
@@ -17,7 +20,7 @@ const DEFAULT_MESSAGES: Partial<Record<IssueCategory, string>> = {
   EXPEDITE_REQUEST: 'รบกวนประสานงานเจ้าหน้าที่เร่งนำส่งให้หน่อยนะครับ ลูกค้ามีความจำเป็นต้องใช้งานด่วน',
   CLOSE_WORK_REQUEST: 'รบกวนประสานงานเจ้าหน้าที่ตรวจสอบปิดงานให้หน่อยนะครับ ร้านค้าสอบถามผู้รับปลายทางแจ้งได้รับพัสดุเรียบร้อยแล้ว สถานะยังไม่อัปเดตปิดงานครับ',
   REDELIVERY_REQUEST: 'รบกวนประสานงานเจ้าหน้าที่ติดต่อนำส่งใหม่ให้หน่อยนะครับ ร้านค้าสอบถามผู้รับแจ้งว่ายังไม่ได้รับการติดต่อจากเจ้าหน้าที่ครับ',
-  RETURN_OR_REVERSE: 'รบกวนประสานงานเจ้าหน้าที่ตรวจสอบถอยสถานะตีกลับและแจ้งนำส่งใหม่ให้หน่อยนะครับ พัสดุถูกส่งคืนต้นทางโดยยังไม่มีการนำจ่ายครับ',
+  RETURN_OR_REVERSE: 'ร้านค้าขอระงับการนำจ่ายและตีกลับพัสดุคืนต้นทาง รบกวนดำเนินการตามอีเมลคำร้องที่แนบมาครับ',
   DELAYED_DELIVERY: 'พัสดุล่าช้ากว่ากำหนด สถานะไม่อัปเดต รบกวนตรวจสอบตำแหน่งพัสดุ',
   NOT_RECEIVED: 'สถานะขึ้นนำจ่ายสำเร็จ แต่ผู้รับแจ้งว่ายังไม่ได้รับของ รบกวนตรวจสอบหลักฐานการนำจ่าย'
 };
@@ -56,6 +59,24 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
   // Parcels with an open case: default is to follow the existing case; admin can switch each one to "create new"
   const [newCaseFor, setNewCaseFor] = useState<string[]>([]);
 
+  // Official email per parcel: required for some problem types (e.g. แจ้งตีกลับ), optional for others
+  const bulkDraft = (type: EmailRequestType, signature: string): EmailDraft => ({
+    to: DEFAULT_REQUEST_EMAIL_TO,
+    requestType: type,
+    attachments: [`หนังสือแจ้งคำร้อง_${BULK_EMAIL_TOKENS.tracking}.pdf`],
+    ...buildEmailDraft(type, {
+      trackingNumber: BULK_EMAIL_TOKENS.tracking,
+      shopName: BULK_EMAIL_TOKENS.shop,
+      contactPerson: signature,
+      receiverName: BULK_EMAIL_TOKENS.receiver
+    })
+  });
+  const rule = EMAIL_RULES[category];
+  const [includeEmail, setIncludeEmail] = useState(false);
+  const [emailDraft, setEmailDraft] = useState<EmailDraft>(() => bulkDraft('RETURN_PARCEL', 'แอดมิน MyOrder'));
+  const emailOn = !!rule && (rule.required || includeEmail);
+  const emailIncomplete = emailOn && (!emailDraft.subject.trim() || !emailDraft.body.trim());
+
   const parsed = parseTrackingList(rawInput);
   const lines = previewBulkReport(parsed.valid);
   const actionable = lines.filter(l => l.status === 'NEW_CASE' || l.status === 'EXISTING_CASE');
@@ -71,17 +92,25 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
     if (Object.values(DEFAULT_MESSAGES).includes(description) || !description.trim()) {
       setDescription(DEFAULT_MESSAGES[next] || '');
     }
+    const nextRule = EMAIL_RULES[next];
+    if (nextRule) {
+      setEmailDraft(bulkDraft(nextRule.type, adminName.trim() || 'แอดมิน MyOrder'));
+      setIncludeEmail(nextRule.required);
+    }
     setCategory(next);
   };
 
   const handleSubmit = async () => {
-    if (actionable.length === 0 || !description.trim()) return;
+    if (actionable.length === 0 || !description.trim() || emailIncomplete) return;
     setIsSubmitting(true);
     const res = await submitBulkReport(lines, {
       category,
       urgency,
       description: description.trim(),
-      adminName: adminName.trim() || 'แอดมิน MyOrder'
+      adminName: adminName.trim() || 'แอดมิน MyOrder',
+      emailTemplate: emailOn
+        ? { ...emailDraft, to: emailDraft.to || DEFAULT_REQUEST_EMAIL_TO, subject: emailDraft.subject.trim(), body: emailDraft.body.trim() }
+        : undefined
     }, new Set(newCaseFor));
     setIsSubmitting(false);
     setResults(res);
@@ -154,6 +183,11 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
                           <td style={{ fontSize: '0.8rem' }}>
                             {r.caseItem ? (
                               <>
+                                {r.emailSent && (
+                                  <div style={{ fontSize: '0.72rem', color: '#0369A1', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                    <Mail size={11} /> ส่งอีเมลคำร้องแล้ว
+                                  </div>
+                                )}
                                 <strong>{r.caseItem.id}</strong> •{' '}
                                 {r.caseItem.assignedCecId ? `CEC ${r.caseItem.assignedCecId}` : <span className="cec-blank-chip">รอระบุ CEC</span>}
                                 {r.caseItem.duplicateOfCaseId && (
@@ -358,6 +392,45 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
                 </div>
                 </div>
               </div>
+
+              {rule && (
+                <div
+                  style={{
+                    background: emailOn ? 'var(--myorder-teal-light)' : '#F8FAFC',
+                    border: `1px solid ${emailOn ? 'var(--myorder-teal-border)' : 'var(--thp-border)'}`,
+                    borderRadius: '10px',
+                    padding: '0.85rem 1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.65rem'
+                  }}
+                >
+                  {rule.required ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.86rem', fontWeight: 700 }}>
+                      <Mail size={16} color="var(--myorder-teal)" />
+                      <span>อีเมลคำร้องถึง ปณท: {EMAIL_REQUEST_TYPE_LABEL[rule.type]} (ต้องส่ง • 1 ฉบับต่อเลขพัสดุ)</span>
+                    </div>
+                  ) : (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.86rem', fontWeight: 700 }}>
+                      <input
+                        type="checkbox"
+                        checked={includeEmail}
+                        onChange={e => setIncludeEmail(e.target.checked)}
+                        style={{ width: '16px', height: '16px', accentColor: 'var(--myorder-teal)' }}
+                      />
+                      <Mail size={16} color={includeEmail ? 'var(--myorder-teal)' : 'var(--thp-muted)'} />
+                      <span>ส่งอีเมลคำร้องถึง ปณท: {EMAIL_REQUEST_TYPE_LABEL[rule.type]} (ไม่บังคับ • 1 ฉบับต่อเลขพัสดุ)</span>
+                    </label>
+                  )}
+                  <div style={{ display: 'flex', gap: '0.4rem', fontSize: '0.8rem', color: rule.required ? '#065F46' : '#92400E' }}>
+                    <Info size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                    <span>
+                      {rule.note} • ระบบใส่ {BULK_EMAIL_TOKENS.tracking} {BULK_EMAIL_TOKENS.shop} {BULK_EMAIL_TOKENS.receiver} ของแต่ละเลขให้อัตโนมัติ
+                    </span>
+                  </div>
+                  {emailOn && <RequestEmailEditor draft={emailDraft} onChange={setEmailDraft} />}
+                </div>
+              )}
             </div>
 
             <div className="modal-footer">
@@ -371,10 +444,10 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
               <button
                 type="button"
                 className="btn-myorder"
-                disabled={isSubmitting || actionable.length === 0 || !description.trim()}
+                disabled={isSubmitting || actionable.length === 0 || !description.trim() || emailIncomplete}
                 onClick={handleSubmit}
               >
-                <Send size={15} /> {isSubmitting ? 'กำลังส่งเรื่องเข้าระบบ ปณ....' : `แจ้ง ${actionable.length} เลขพัสดุ`}
+                <Send size={15} /> {isSubmitting ? 'กำลังส่งเรื่องเข้าระบบ ปณ....' : `แจ้ง ${actionable.length} เลขพัสดุ${emailOn ? ' + ส่งอีเมล' : ''}`}
               </button>
             </div>
           </>

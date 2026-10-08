@@ -3,10 +3,10 @@ import { useCases } from '../../context/CaseContext';
 import type { CaseItem } from '../../types/case';
 import { CEC_REGIONS } from '../../data/cecRegions';
 import { SlaBadge } from '../common/SlaBadge';
-import { CaseDetailModal } from '../common/CaseDetailModal';
+import { CaseDetailModal, type DetailTab } from '../common/CaseDetailModal';
 import { IssueDisplay, UrgencyBadge } from '../common/IssueBadge';
-import { CaseStatusBadge, getCaseStatusLabel } from '../common/StatusBadge';
-import { OrderRefChip, ReportedAtCell, TrackingCell } from '../common/CecAssignment';
+import { getCaseStatusLabel } from '../common/StatusBadge';
+import { LatestStatusCell, OrderRefChip, ReportedAtCell, TrackingCell } from '../common/CecAssignment';
 import { DateRangeFilter } from '../common/DateRangeFilter';
 import { SearchBox } from '../common/SearchBox';
 import { rowOpenProps } from '../../utils/rowOpen';
@@ -22,6 +22,7 @@ export const CecWorkspace: React.FC = () => {
   } = useCases();
 
   const [selectedCaseDetail, setSelectedCaseDetail] = useState<CaseItem | null>(null);
+  const [detailTab, setDetailTab] = useState<DetailTab>('OVERVIEW');
   const { sort, sortCases, toggle } = useCaseSort();
   const [replyingCase, setReplyingCase] = useState<CaseItem | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -92,7 +93,7 @@ export const CecWorkspace: React.FC = () => {
                 <th>เลขพัสดุ</th>
                 <th>ปัญหา</th>
                 <SortTh label="เร่งด่วน" sortKey="urgency" sort={sort} onSort={toggle} />
-                <th>สถานะ</th>
+                <th>สถานะล่าสุด</th>
                 <SortTh label="SLA" sortKey="sla" sort={sort} onSort={toggle} />
                 <SortTh label="วันเวลาที่แจ้ง" sortKey="reportedAt" sort={sort} onSort={toggle} />
                 <th>ปลายทาง & ผู้รับ</th>
@@ -109,7 +110,7 @@ export const CecWorkspace: React.FC = () => {
                 </tr>
               ) : (
                 sortCases(cecCases).map(item => (
-                  <tr key={item.id} {...rowOpenProps(() => setSelectedCaseDetail(item))}>
+                  <tr key={item.id} {...rowOpenProps(() => { setDetailTab('OVERVIEW'); setSelectedCaseDetail(item); })}>
                     <td>
                       <TrackingCell caseItem={item} />
                     </td>
@@ -120,7 +121,7 @@ export const CecWorkspace: React.FC = () => {
                       <UrgencyBadge urgency={item.urgency} />
                     </td>
                     <td>
-                      <CaseStatusBadge status={item.status} />
+                      <LatestStatusCell caseItem={item} onOpen={() => { setDetailTab('TRACKING'); setSelectedCaseDetail(item); }} />
                     </td>
                     <td>
                       <SlaBadge
@@ -273,6 +274,7 @@ export const CecWorkspace: React.FC = () => {
       {selectedCaseDetail && (
         <CaseDetailModal
           caseItem={selectedCaseDetail}
+          initialTab={detailTab}
           onClose={() => setSelectedCaseDetail(null)}
         />
       )}

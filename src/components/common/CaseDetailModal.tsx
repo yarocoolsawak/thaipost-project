@@ -34,17 +34,21 @@ interface CaseDetailModalProps {
   onClose: () => void;
   onOpenReviewAnswer?: (caseItem: CaseItem) => void;
   onOpenEscalateBranch?: (caseItem: CaseItem) => void;
+  initialTab?: DetailTab;
 }
+
+export type DetailTab = 'OVERVIEW' | 'TRACKING' | 'CHAT' | 'EMAILS' | 'BRANCH' | 'AUDIT';
 
 export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
   caseItem: initialCaseItem,
   onClose,
   onOpenReviewAnswer,
-  onOpenEscalateBranch
+  onOpenEscalateBranch,
+  initialTab = 'OVERVIEW'
 }) => {
   const { role, addChatMessage, cases } = useCases();
   const caseItem = cases.find(c => c.id === initialCaseItem.id) || initialCaseItem;
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TRACKING' | 'CHAT' | 'EMAILS' | 'BRANCH' | 'AUDIT'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<DetailTab>(initialTab);
   const [newChatText, setNewChatText] = useState('');
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);

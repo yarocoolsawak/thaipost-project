@@ -18,6 +18,7 @@ interface EmailRow {
 const TYPE_COLORS: Record<EmailRequestType, { bg: string; color: string }> = {
   RETURN_PARCEL: { bg: '#FEF3C7', color: '#92400E' },
   CHANGE_ADDRESS: { bg: '#DBEAFE', color: '#1E40AF' },
+  REDELIVER: { bg: '#DCFCE7', color: '#166534' },
   SUBMIT_DOCS: { bg: '#EDE9FE', color: '#5B21B6' }
 };
 

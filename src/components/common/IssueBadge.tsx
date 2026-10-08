@@ -2,7 +2,7 @@ import React from 'react';
 import type { IssueCategory, UrgencyLevel } from '../../types/case';
 import { HoverTip } from './HoverTip';
 import { getCategoryShortLabel } from './StatusBadge';
-import { Clock, AlertTriangle, HelpCircle, PackageX, Compass, AlertCircle, Zap, CheckCircle2, RotateCcw, Undo2 } from 'lucide-react';
+import { Clock, AlertTriangle, HelpCircle, PackageX, Compass, AlertCircle, Zap, CheckCircle2, RotateCcw, Undo2, MapPin } from 'lucide-react';
 
 interface IssueCategoryMeta {
   label: string;
@@ -39,12 +39,20 @@ export const ISSUE_CATEGORY_META: Record<IssueCategory, IssueCategoryMeta> = {
     border: '#BFDBFE'
   },
   RETURN_OR_REVERSE: {
-    label: 'แจ้งตีกลับ / ถอยสถานะตีกลับและแจ้งนำส่งใหม่',
-    shortLabel: 'แจ้งตีกลับ/ถอยสถานะ',
+    label: 'แจ้งตีกลับ (ขอส่งคืนต้นทาง)',
+    shortLabel: 'แจ้งตีกลับ',
     icon: <Undo2 size={12} />,
     bg: '#FEF2F2',
     color: '#B91C1C',
     border: '#FECACA'
+  },
+  CHANGE_ADDRESS_REQUEST: {
+    label: 'ขอเปลี่ยนที่อยู่ / เบอร์โทรผู้รับปลายทาง',
+    shortLabel: 'เปลี่ยนที่อยู่/เบอร์',
+    icon: <MapPin size={12} />,
+    bg: '#EFF6FF',
+    color: '#1D4ED8',
+    border: '#BFDBFE'
   },
   DELAYED_DELIVERY: {
     label: 'พัสดุล่าช้าเกินกำหนด',
