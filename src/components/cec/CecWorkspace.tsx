@@ -11,6 +11,7 @@ import { DateRangeFilter } from '../common/DateRangeFilter';
 import { SearchBox } from '../common/SearchBox';
 import { rowOpenProps } from '../../utils/rowOpen';
 import { MapPin, Send, CheckCircle } from 'lucide-react';
+import { SortTh, useCaseSort } from '../common/CaseSort';
 
 export const CecWorkspace: React.FC = () => {
   const {
@@ -21,6 +22,7 @@ export const CecWorkspace: React.FC = () => {
   } = useCases();
 
   const [selectedCaseDetail, setSelectedCaseDetail] = useState<CaseItem | null>(null);
+  const { sort, sortCases, toggle } = useCaseSort();
   const [replyingCase, setReplyingCase] = useState<CaseItem | null>(null);
   const [replyText, setReplyText] = useState('');
   const [branchNotes, setBranchNotes] = useState('');
@@ -89,12 +91,12 @@ export const CecWorkspace: React.FC = () => {
               <tr>
                 <th>เลขพัสดุ</th>
                 <th>ปัญหา</th>
-                <th>ความเร่งด่วน</th>
+                <SortTh label="เร่งด่วน" sortKey="urgency" sort={sort} onSort={toggle} />
                 <th>สถานะ</th>
-                <th>SLA</th>
-                <th>วันเวลาที่แจ้ง</th>
-                <th>ร้านค้า</th>
+                <SortTh label="SLA" sortKey="sla" sort={sort} onSort={toggle} />
+                <SortTh label="วันเวลาที่แจ้ง" sortKey="reportedAt" sort={sort} onSort={toggle} />
                 <th>ปลายทาง & ผู้รับ</th>
+                <th>ร้านค้า</th>
                 <th style={{ textAlign: 'right' }}></th>
               </tr>
             </thead>
@@ -106,7 +108,7 @@ export const CecWorkspace: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                cecCases.map(item => (
+                sortCases(cecCases).map(item => (
                   <tr key={item.id} {...rowOpenProps(() => setSelectedCaseDetail(item))}>
                     <td>
                       <TrackingCell caseItem={item} />
@@ -135,17 +137,17 @@ export const CecWorkspace: React.FC = () => {
                       <ReportedAtCell iso={item.createdAt} />
                     </td>
                     <td>
-                      <div style={{ fontWeight: 600 }}>{item.companyName}</div>
-                      <OrderRefChip caseItem={item} />
-                    </td>
-                    <td>
                       <div style={{ fontWeight: 600 }}>{item.parcelInfo.destPostOffice}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>
                         ผู้รับ: {item.parcelInfo.receiverName} ({item.parcelInfo.receiverPhone})
                       </div>
                     </td>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{item.companyName}</div>
+                      <OrderRefChip caseItem={item} />
+                    </td>
                     <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div className="row-actions">
                         {/* Reply Action */}
                         {item.status === 'WAITING_CEC_REPLY' || item.status === 'SENT_TO_CEC' ? (
                           <button

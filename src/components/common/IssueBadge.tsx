@@ -1,6 +1,7 @@
 import React from 'react';
 import type { IssueCategory, UrgencyLevel } from '../../types/case';
 import { HoverTip } from './HoverTip';
+import { getCategoryShortLabel } from './StatusBadge';
 import { Clock, AlertTriangle, HelpCircle, PackageX, Compass, AlertCircle, Zap, CheckCircle2, RotateCcw, Undo2 } from 'lucide-react';
 
 interface IssueCategoryMeta {
@@ -120,7 +121,6 @@ export const UrgencyBadge: React.FC<{ urgency?: UrgencyLevel }> = ({ urgency = '
         border: `1px solid ${meta.border}`
       }}
     >
-      {urgency === 'CRITICAL' && <Zap size={11} />}
       {meta.label}
     </span>
   );
@@ -131,29 +131,11 @@ interface IssueDisplayProps {
   inquiry?: string;
 }
 
-// Problem column: just the problem name; hovering shows the full problem type and what the shop wrote
+// Problem column: the problem name as plain text; hovering shows the full problem type and what the shop wrote
 export const IssueDisplay: React.FC<IssueDisplayProps> = ({ category, inquiry }) => {
   const meta = ISSUE_CATEGORY_META[category] || ISSUE_CATEGORY_META.OTHER;
-  const pill = (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.25rem',
-        whiteSpace: 'nowrap',
-        fontSize: '0.75rem',
-        fontWeight: 700,
-        padding: '0.15rem 0.5rem',
-        borderRadius: '4px',
-        background: meta.bg,
-        color: meta.color,
-        border: `1px solid ${meta.border}`,
-        cursor: 'help'
-      }}
-    >
-      {meta.icon}
-      <span>{meta.shortLabel}</span>
-    </span>
+  const name = (
+    <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--thp-dark)', cursor: 'help', whiteSpace: 'nowrap' }}>{getCategoryShortLabel(category)}</span>
   );
   return (
     <HoverTip
@@ -164,7 +146,7 @@ export const IssueDisplay: React.FC<IssueDisplayProps> = ({ category, inquiry })
         </>
       }
     >
-      {pill}
+      {name}
     </HoverTip>
   );
 };

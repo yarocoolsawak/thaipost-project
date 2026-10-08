@@ -10,6 +10,7 @@ import { DateRangeFilter } from '../common/DateRangeFilter';
 import { SearchBox } from '../common/SearchBox';
 import { rowOpenProps } from '../../utils/rowOpen';
 import { notify } from '../../utils/dialog';
+import { SortTh, useCaseSort } from '../common/CaseSort';
 import {
   Package,
   CheckCircle2
@@ -28,6 +29,7 @@ export const BranchWorkspace: React.FC = () => {
   const [selectedCaseDetail, setSelectedCaseDetail] = useState<CaseItem | null>(null);
   const [updateActionCase, setUpdateActionCase] = useState<CaseItem | null>(null);
   const [actionNote, setActionNote] = useState('');
+  const { sort, sortCases, toggle } = useCaseSort();
 
   // Destination branches list extracted from cases
   const availableBranches = Array.from(
@@ -103,25 +105,24 @@ export const BranchWorkspace: React.FC = () => {
               <tr>
                 <th>เลขพัสดุ</th>
                 <th>ปัญหา</th>
-                <th>ความเร่งด่วน</th>
+                <SortTh label="เร่งด่วน" sortKey="urgency" sort={sort} onSort={toggle} />
                 <th>สถานะ</th>
-                <th>SLA</th>
-                <th>บันทึกสายตรงจากส่วนกลาง</th>
-                <th>วันเวลาที่แจ้ง</th>
-                <th>ร้านค้า</th>
-                <th>ผู้รับปลายทาง</th>
+                <SortTh label="SLA" sortKey="sla" sort={sort} onSort={toggle} />
+                <th>บันทึกจากส่วนกลาง</th>
+                <SortTh label="วันเวลาที่แจ้ง" sortKey="reportedAt" sort={sort} onSort={toggle} />
+                <th>ผู้รับ / ร้านค้า</th>
                 <th style={{ textAlign: 'right' }}></th>
               </tr>
             </thead>
             <tbody>
               {branchCases.length === 0 ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
                     ไม่มีเคสที่ถูกยกระดับหรือติดต่อมายังสาขานี้
                   </td>
                 </tr>
               ) : (
-                branchCases.map(item => {
+                sortCases(branchCases).map(item => {
                   const latestBranchLog = item.branchContactLogs[0];
                   return (
                     <tr key={item.id} {...rowOpenProps(() => setSelectedCaseDetail(item))}>
@@ -158,10 +159,11 @@ export const BranchWorkspace: React.FC = () => {
                               padding: '0.35rem 0.6rem',
                               borderRadius: '6px',
                               border: '1px solid #FECDD3',
-                              maxWidth: '260px',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis'
+                              maxWidth: '180px',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden'
                             }}
                             title={latestBranchLog.outcome}
                           >
@@ -177,16 +179,14 @@ export const BranchWorkspace: React.FC = () => {
                         <ReportedAtCell iso={item.createdAt} />
                       </td>
                       <td>
-                        <div style={{ fontWeight: 600 }}>{item.companyName}</div>
-                      </td>
-                      <td>
                         <div style={{ fontWeight: 600 }}>{item.parcelInfo.receiverName}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>
                           {item.parcelInfo.receiverPhone}
                         </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--thp-slate)' }}>ร้าน: {item.companyName}</div>
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <div className="row-actions">
                           <button
                             type="button"
                             className="btn-primary"

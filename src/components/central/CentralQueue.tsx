@@ -8,13 +8,14 @@ import { BranchEscalationModal } from './BranchEscalationModal';
 import { CEC_REGIONS } from '../../data/cecRegions';
 import { exportCasesToExcel } from '../../utils/exportExcel';
 import { ISSUE_CATEGORY_META, IssueDisplay, UrgencyBadge } from '../common/IssueBadge';
-import { CaseStatusBadge, getCaseStatusLabel } from '../common/StatusBadge';
+import { CaseStatusBadge, getCaseStatusLabel, getCategoryShortLabel } from '../common/StatusBadge';
 import { DestinationCell, OrderRefChip, ReportedAtCell, TrackingCell } from '../common/CecAssignment';
 import { DateRangeFilter } from '../common/DateRangeFilter';
 import { SearchBox } from '../common/SearchBox';
 import { rowOpenProps } from '../../utils/rowOpen';
 import type { IssueCategory } from '../../types/case';
 import { Building2, CheckCircle2, PhoneForwarded, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { SortTh, useCaseSort } from '../common/CaseSort';
 
 export const CentralQueue: React.FC = () => {
   const {
@@ -32,6 +33,7 @@ export const CentralQueue: React.FC = () => {
   const [cecFilter, setCecFilter] = useState<string>('ALL');
   const [syncingIds, setSyncingIds] = useState<string[]>([]);
   const [syncNotice, setSyncNotice] = useState('');
+  const { sort, sortCases, toggle } = useCaseSort();
 
   // Filter cases with CEC filter if selected
   const displayCases = filteredCases.filter(c => {
@@ -148,7 +150,7 @@ export const CentralQueue: React.FC = () => {
             <option value="ALL">ทุกปัญหา</option>
             {(Object.keys(ISSUE_CATEGORY_META) as IssueCategory[]).map(key => (
               <option key={key} value={key}>
-                {ISSUE_CATEGORY_META[key].shortLabel}
+                {getCategoryShortLabel(key)}
               </option>
             ))}
           </select>
@@ -168,12 +170,12 @@ export const CentralQueue: React.FC = () => {
               <tr>
                 <th>เลขพัสดุ</th>
                 <th>ปัญหา</th>
-                <th>ความเร่งด่วน</th>
+                <SortTh label="เร่งด่วน" sortKey="urgency" sort={sort} onSort={toggle} />
                 <th>สถานะ</th>
-                <th>SLA</th>
-                <th>วันเวลาที่แจ้ง</th>
-                <th>ร้านค้า / ผู้แจ้ง</th>
+                <SortTh label="SLA" sortKey="sla" sort={sort} onSort={toggle} />
+                <SortTh label="วันเวลาที่แจ้ง" sortKey="reportedAt" sort={sort} onSort={toggle} />
                 <th>ปลายทาง & CEC</th>
+                <th>ร้านค้า / ผู้แจ้ง</th>
                 <th style={{ textAlign: 'right' }}></th>
               </tr>
             </thead>
@@ -185,7 +187,7 @@ export const CentralQueue: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                displayCases.map(item => (
+                sortCases(displayCases).map(item => (
                   <tr key={item.id} {...rowOpenProps(() => setSelectedCaseForDetail(item))}>
                     <td>
                       <TrackingCell caseItem={item} />
@@ -214,17 +216,17 @@ export const CentralQueue: React.FC = () => {
                       <ReportedAtCell iso={item.createdAt} />
                     </td>
                     <td>
+                      <DestinationCell caseItem={item} showHint />
+                    </td>
+                    <td>
                       <div style={{ fontWeight: 600, color: 'var(--thp-dark)' }}>{item.companyName}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>{item.contactPerson}</div>
                       <OrderRefChip caseItem={item} />
                     </td>
-                    <td>
-                      <DestinationCell caseItem={item} showHint />
-                    </td>
 
                     {/* Actions */}
                     <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div className="row-actions">
                         {/* Action 1: If Waiting Central Review, show Review button */}
                         {item.status === 'WAITING_CENTRAL_REVIEW' && (
                           <button
@@ -232,8 +234,9 @@ export const CentralQueue: React.FC = () => {
                             className="btn-primary"
                             style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem', background: '#4F46E5' }}
                             onClick={() => setReviewCase(item)}
+                            title="ตรวจคำตอบจาก CEC ก่อนส่งกลับร้านค้า"
                           >
-                            <CheckCircle2 size={13} /> ตรวจคำตอบ
+                            <CheckCircle2 size={13} /> ตรวจ
                           </button>
                         )}
 
@@ -245,7 +248,7 @@ export const CentralQueue: React.FC = () => {
                             style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
                             onClick={() => setEscalateCase(item)}
                           >
-                            <PhoneForwarded size={13} /> โทรหา ปณ.
+                            <PhoneForwarded size={13} /> โทรสาขา
                           </button>
                         )}
 

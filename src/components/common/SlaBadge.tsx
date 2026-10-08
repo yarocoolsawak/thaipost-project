@@ -29,7 +29,7 @@ export const SlaBadge: React.FC<SlaBadgeProps> = ({
   if (status === 'CLOSED') {
     return (
       <span className="sla-badge normal" title="เคสได้รับการตรวจสอบและปิดตาม SLA แล้ว">
-        <Clock size={12} /> ปิดตาม SLA แล้ว
+        <Clock size={12} /> ปิดแล้ว
       </span>
     );
   }
@@ -54,7 +54,7 @@ export const SlaBadge: React.FC<SlaBadgeProps> = ({
     return (
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} title={tooltipText}>
         <span className="sla-badge exceeded">
-          <AlertCircle size={12} /> เกิน SLA {targetDays} วัน ({overdueHours > 0 ? `${overdueHours}h` : 'แล้ว'})
+          <AlertCircle size={12} /> เกิน{overdueHours > 0 ? ` ${overdueHours} ชม.` : 'กำหนด'}
         </span>
         {showRouteTag && (
           <span style={{ fontSize: '0.68rem', color: '#B91C1C', fontWeight: 600 }}>
@@ -69,7 +69,7 @@ export const SlaBadge: React.FC<SlaBadgeProps> = ({
     return (
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} title={tooltipText}>
         <span className="sla-badge warning">
-          <AlertTriangle size={12} /> เหลือ {diffHours}h ({targetDays}d)
+          <AlertTriangle size={12} /> เหลือ {diffHours} ชม.
         </span>
       </div>
     );
@@ -79,23 +79,8 @@ export const SlaBadge: React.FC<SlaBadgeProps> = ({
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} title={tooltipText}>
       <span className="sla-badge normal">
-        <Clock size={12} /> เหลือ {daysLeft} วัน ({diffHours}h)
+        <Clock size={12} /> เหลือ {daysLeft} วัน
       </span>
-      {bagOpenedAt && (
-        <span
-          style={{
-            fontSize: '0.68rem',
-            color: 'var(--thp-muted)',
-            background: '#F1F5F9',
-            padding: '0.08rem 0.3rem',
-            borderRadius: '4px',
-            border: '1px solid #E2E8F0'
-          }}
-          title={`วันเปิดถุง: ${bagDateTh}`}
-        >
-          ถุง: {bagDateTh}
-        </span>
-      )}
     </div>
   );
 };

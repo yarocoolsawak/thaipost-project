@@ -228,7 +228,7 @@ button, input, select, textarea {
 
 /* Sidebar */
 .sidebar-panel {
-  width: 270px;
+  width: 250px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -1407,4 +1407,91 @@ button, input, select, textarea {
   font-size: 0.8rem;
   color: var(--thp-muted);
   white-space: nowrap;
+}
+
+/* ---- Sortable column headers ---- */
+.sort-th-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sort-th-btn:hover,
+.sort-th-btn.active {
+  color: var(--thp-dark);
+}
+
+/* ---- Case tables fit the page width (no sideways scrolling) ---- */
+.case-table {
+  font-size: 0.82rem;
+}
+
+.case-table th {
+  padding: 0.7rem 0.45rem;
+  letter-spacing: 0.02em;
+}
+
+.case-table td {
+  padding: 0.75rem 0.45rem;
+}
+
+.case-table th:first-child,
+.case-table td:first-child {
+  padding-left: 0.9rem;
+}
+
+.case-table th:last-child,
+.case-table td:last-child {
+  padding-right: 0.9rem;
+}
+
+.case-table .order-status-chip {
+  white-space: normal;
+  min-width: 96px;
+}
+
+.case-table .tracking-pill {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.case-table .sla-badge {
+  white-space: nowrap;
+}
+
+/* Colour already tells the SLA state in a table row */
+.case-table .sla-badge svg {
+  display: none;
+}
+
+/* Row buttons stack instead of widening the table */
+.row-actions {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
+}
+
+.row-actions button {
+  justify-content: center;
+  white-space: nowrap;
+  padding: 0.3rem 0.5rem !important;
+  font-size: 0.74rem !important;
+}
+
+/* Laptop widths: tighter page gutters leave the case table room to fit */
+@media (max-width: 1400px) {
+  .main-layout {
+    padding: 1rem;
+    gap: 1rem;
+  }
 }

@@ -35,8 +35,8 @@ export const DestinationCell: React.FC<{ caseItem: CaseItem; showHint?: boolean 
     <div style={{ fontWeight: 600, color: 'var(--thp-navy)' }}>
       {stripZip(caseItem.assignedBranchName || caseItem.parcelInfo.destPostOffice)}
     </div>
-    <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>
-      รหัสไปรษณีย์{' '}
+    <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }} title="รหัสไปรษณีย์ปลายทาง">
+      รหัส{' '}
       <span style={{ fontFamily: 'var(--font-en)', fontWeight: 600, color: 'var(--thp-slate)' }}>{caseItem.parcelInfo.destZipCode}</span>
     </div>
     <CecCell caseItem={caseItem} showHint={showHint} />

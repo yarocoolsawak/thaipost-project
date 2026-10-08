@@ -15,6 +15,7 @@ import { EmailDispatchModal } from './EmailDispatchModal';
 import { exportCasesToExcel } from '../../utils/exportExcel';
 import { MYORDER_CASE_FILTERS, matchesCaseFilter } from './caseFilters';
 import { MonitorCheck, FileSpreadsheet, Mail } from 'lucide-react';
+import { SortTh, useCaseSort } from '../common/CaseSort';
 
 export const MyOrderAdminMonitor: React.FC = () => {
   const { searchQuery } = useCases();
@@ -27,6 +28,7 @@ export const MyOrderAdminMonitor: React.FC = () => {
   } = useMyOrder();
   const [viewCase, setViewCase] = useState<CaseItem | null>(null);
   const [emailCase, setEmailCase] = useState<CaseItem | null>(null);
+  const { sort, sortCases, toggle } = useCaseSort();
 
   // MyOrder admin monitors every shop's cases (shop picker here, status filter in the sidebar)
   const visible = myOrderCases.filter(c => matchesCaseSearch(c, searchQuery) && matchesCaseFilter(c, filter));
@@ -84,12 +86,12 @@ export const MyOrderAdminMonitor: React.FC = () => {
               <tr>
                 <th>เลขพัสดุ</th>
                 <th>ปัญหา</th>
-                <th>ความเร่งด่วน</th>
+                <SortTh label="เร่งด่วน" sortKey="urgency" sort={sort} onSort={toggle} />
                 <th>สถานะ</th>
-                <th>SLA</th>
-                <th>วันเวลาที่แจ้ง</th>
-                <th>ร้านค้า / คำสั่งซื้อ</th>
+                <SortTh label="SLA" sortKey="sla" sort={sort} onSort={toggle} />
+                <SortTh label="วันเวลาที่แจ้ง" sortKey="reportedAt" sort={sort} onSort={toggle} />
                 <th>ปลายทาง & CEC</th>
+                <th>ร้านค้า / คำสั่งซื้อ</th>
                 <th style={{ textAlign: 'right' }}></th>
               </tr>
             </thead>
@@ -101,7 +103,7 @@ export const MyOrderAdminMonitor: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                visible.map(c => (
+                sortCases(visible).map(c => (
                   <tr key={c.id} {...rowOpenProps(() => setViewCase(c))}>
                     <td>
                       <TrackingCell caseItem={c} />
@@ -130,16 +132,16 @@ export const MyOrderAdminMonitor: React.FC = () => {
                       <ReportedAtCell iso={c.createdAt} />
                     </td>
                     <td>
+                      <DestinationCell caseItem={c} showHint />
+                    </td>
+                    <td>
                       <div style={{ fontWeight: 600 }}>{c.myOrderRef.shopName}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>
                         {c.myOrderRef.orderId} • {c.contactPerson}
                       </div>
                     </td>
-                    <td>
-                      <DestinationCell caseItem={c} showHint />
-                    </td>
                     <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
+                      <div className="row-actions">
                         {c.status !== 'CLOSED' && (
                           <button
                             type="button"
