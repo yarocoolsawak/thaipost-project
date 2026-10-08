@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { CaseItem } from '../../types/case';
 import { useCases } from '../../context/CaseContext';
 import { notify } from '../../utils/dialog';
+import { formatThaiDate } from '../../utils/slaCalculator';
 import { CheckCircle2, Edit3, RotateCcw, X, Send } from 'lucide-react';
 
 interface AnswerReviewModalProps {
@@ -89,7 +90,7 @@ export const AnswerReviewModal: React.FC<AnswerReviewModalProps> = ({ caseItem, 
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span>คำตอบที่ CEC ส่งกลับมา:</span>
               <span style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>
-                ผู้ตอบ: {caseItem.cecReply?.repliedBy || 'เจ้าหน้าที่ CEC'} ({caseItem.cecReply?.repliedAt ? new Date(caseItem.cecReply.repliedAt).toLocaleTimeString('th-TH') : ''})
+                ผู้ตอบ: {caseItem.cecReply?.repliedBy || 'เจ้าหน้าที่ CEC'} ({caseItem.cecReply?.repliedAt ? formatThaiDate(caseItem.cecReply.repliedAt, 'long') : ''})
               </span>
             </label>
             <div

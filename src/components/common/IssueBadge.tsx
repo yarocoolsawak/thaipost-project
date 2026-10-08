@@ -1,6 +1,6 @@
 import React from 'react';
 import type { IssueCategory, UrgencyLevel } from '../../types/case';
-import { TruncatedText } from './TruncatedText';
+import { HoverTip } from './HoverTip';
 import { Clock, AlertTriangle, HelpCircle, PackageX, Compass, AlertCircle, Zap, CheckCircle2, RotateCcw, Undo2 } from 'lucide-react';
 
 interface IssueCategoryMeta {
@@ -95,85 +95,76 @@ export const ISSUE_CATEGORY_META: Record<IssueCategory, IssueCategoryMeta> = {
   }
 };
 
+// Urgency is its own column: ปกติ / ด่วน / ด่วนมาก
+export const URGENCY_META: Record<UrgencyLevel, { label: string; rank: number; bg: string; color: string; border: string }> = {
+  CRITICAL: { label: 'ด่วนมาก', rank: 2, bg: '#FEF2F2', color: '#DC2626', border: '#FECACA' },
+  HIGH: { label: 'ด่วน', rank: 1, bg: '#FFFBEB', color: '#B45309', border: '#FDE68A' },
+  NORMAL: { label: 'ปกติ', rank: 0, bg: '#F8FAFC', color: '#64748B', border: '#E2E8F0' }
+};
+
+export const UrgencyBadge: React.FC<{ urgency?: UrgencyLevel }> = ({ urgency = 'NORMAL' }) => {
+  const meta = URGENCY_META[urgency] || URGENCY_META.NORMAL;
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.2rem',
+        whiteSpace: 'nowrap',
+        fontSize: '0.72rem',
+        fontWeight: urgency === 'NORMAL' ? 500 : 700,
+        padding: '0.1rem 0.45rem',
+        borderRadius: '4px',
+        background: meta.bg,
+        color: meta.color,
+        border: `1px solid ${meta.border}`
+      }}
+    >
+      {urgency === 'CRITICAL' && <Zap size={11} />}
+      {meta.label}
+    </span>
+  );
+};
+
 interface IssueDisplayProps {
   category: IssueCategory;
-  urgency?: UrgencyLevel;
   inquiry?: string;
-  compact?: boolean;
 }
 
-export const IssueDisplay: React.FC<IssueDisplayProps> = ({
-  category,
-  urgency = 'NORMAL',
-  inquiry,
-  compact = false
-}) => {
+// Problem column: just the problem name; hovering shows the full problem type and what the shop wrote
+export const IssueDisplay: React.FC<IssueDisplayProps> = ({ category, inquiry }) => {
   const meta = ISSUE_CATEGORY_META[category] || ISSUE_CATEGORY_META.OTHER;
-
+  const pill = (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.25rem',
+        whiteSpace: 'nowrap',
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        padding: '0.15rem 0.5rem',
+        borderRadius: '4px',
+        background: meta.bg,
+        color: meta.color,
+        border: `1px solid ${meta.border}`,
+        cursor: 'help'
+      }}
+    >
+      {meta.icon}
+      <span>{meta.shortLabel}</span>
+    </span>
+  );
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxWidth: compact ? '220px' : '280px' }}>
-      {/* Category Pill & Urgency */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-            fontSize: '0.72rem',
-            fontWeight: 700,
-            padding: '0.12rem 0.45rem',
-            borderRadius: '4px',
-            background: meta.bg,
-            color: meta.color,
-            border: `1px solid ${meta.border}`
-          }}
-          title={meta.label}
-        >
-          {meta.icon}
-          <span>{meta.shortLabel}</span>
-        </span>
-
-        {urgency === 'CRITICAL' && (
-          <span
-            style={{
-              fontSize: '0.68rem',
-              color: '#DC2626',
-              background: '#FEF2F2',
-              border: '1px solid #FECACA',
-              padding: '0.05rem 0.35rem',
-              borderRadius: '4px',
-              fontWeight: 700
-            }}
-          >
-            ⚡ ด่วนที่สุด
-          </span>
-        )}
-
-        {urgency === 'HIGH' && (
-          <span
-            style={{
-              fontSize: '0.68rem',
-              color: '#D97706',
-              background: '#FFFBEB',
-              border: '1px solid #FDE68A',
-              padding: '0.05rem 0.35rem',
-              borderRadius: '4px',
-              fontWeight: 600
-            }}
-          >
-            ด่วน
-          </span>
-        )}
-      </div>
-
-      {/* Specific problem description (customer inquiry): full text on hover */}
-      {inquiry && (
-        <TruncatedText
-          text={inquiry}
-          lines={2}
-          style={{ fontSize: '0.8rem', color: 'var(--thp-dark)', lineHeight: 1.35, fontWeight: 500 }}
-        />
-      )}
-    </div>
+    <HoverTip
+      content={
+        <>
+          <div style={{ fontWeight: 700, marginBottom: inquiry ? '0.3rem' : 0 }}>{meta.label}</div>
+          {inquiry && <div>{inquiry}</div>}
+        </>
+      }
+    >
+      {pill}
+    </HoverTip>
   );
 };

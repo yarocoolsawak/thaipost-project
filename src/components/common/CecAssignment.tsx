@@ -129,3 +129,15 @@ export const ReportedAtCell: React.FC<{ iso: string }> = ({ iso }) => {
     </div>
   );
 };
+
+// First column of every case list: tracking number, then case ID and its email / duplicate markers
+export const TrackingCell: React.FC<{ caseItem: CaseItem }> = ({ caseItem }) => (
+  <>
+    <div className="tracking-pill">{caseItem.trackingNumber}</div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '2px' }}>
+      <span className="case-id-sub">{caseItem.id}</span>
+      <EmailCountChip caseItem={caseItem} />
+    </div>
+    <DuplicateChip caseItem={caseItem} />
+  </>
+);

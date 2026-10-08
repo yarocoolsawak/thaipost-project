@@ -5,6 +5,7 @@ import { SlaBadge } from './SlaBadge';
 import { TrackingTimeline } from './TrackingTimeline';
 import { DuplicateChip, OrderRefChip } from './CecAssignment';
 import { CloseCaseModal } from './CloseCaseModal';
+import { UrgencyBadge } from './IssueBadge';
 import { evaluateCaseSla, formatThaiDate } from '../../utils/slaCalculator';
 import { CaseStatusBadge, getCategoryShortLabel, formatPostalStatus } from './StatusBadge';
 import {
@@ -199,7 +200,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                       ⚡ คำตอบจาก CEC (รอตรวจสอบก่อนตอบร้านค้า)
                     </div>
                     <span style={{ fontSize: '0.74rem', color: '#64748B' }}>
-                      ตอบเมื่อ: {new Date(caseItem.cecReply.repliedAt).toLocaleTimeString('th-TH')} โดย {caseItem.cecReply.repliedBy}
+                      ตอบเมื่อ: {formatThaiDate(caseItem.cecReply.repliedAt, 'long')} โดย {caseItem.cecReply.repliedBy}
                     </span>
                   </div>
                   <div
@@ -287,13 +288,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
                     <span style={{ color: 'var(--thp-muted)' }}>ความเร่งด่วน:</span>
                     <span>
-                      {caseItem.urgency === 'CRITICAL' ? (
-                        <span style={{ color: '#DC2626', fontWeight: 700 }}>⚡ ด่วนที่สุด</span>
-                      ) : caseItem.urgency === 'HIGH' ? (
-                        <span style={{ color: '#EA580C', fontWeight: 700 }}>ด่วน</span>
-                      ) : (
-                        <span style={{ color: '#16A34A', fontWeight: 600 }}>ปกติ</span>
-                      )}
+                      <UrgencyBadge urgency={caseItem.urgency} />
                     </span>
 
                     <span style={{ color: 'var(--thp-muted)' }}>เวลาแจ้ง:</span>
@@ -536,7 +531,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                             ครั้งที่ {call.attemptNumber} ({call.callerName})
                           </span>
                           <span style={{ color: 'var(--thp-muted)', fontSize: '0.68rem' }}>
-                            {new Date(call.calledAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
+                            {formatThaiDate(call.calledAt, 'long')}
                           </span>
                         </div>
                         <div style={{ color: 'var(--thp-dark)', fontWeight: 600, marginTop: '2px' }}>
@@ -655,7 +650,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                   >
                     <div className="chat-author">
                       <span>{chat.senderName}</span>
-                      <span>{new Date(chat.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>{formatThaiDate(chat.timestamp, 'long')}</span>
                     </div>
                     <div>{chat.message}</div>
                   </div>

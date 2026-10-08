@@ -247,7 +247,7 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
                       <select className="form-control" value={urgency} onChange={e => setUrgency(e.target.value as UrgencyLevel)}>
                         <option value="NORMAL">ปกติ</option>
                         <option value="HIGH">ด่วน</option>
-                        <option value="CRITICAL">ด่วนที่สุด</option>
+                        <option value="CRITICAL">ด่วนมาก</option>
                       </select>
                     </div>
                   </div>

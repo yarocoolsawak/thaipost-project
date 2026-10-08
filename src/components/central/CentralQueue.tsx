@@ -7,33 +7,22 @@ import { AnswerReviewModal } from './AnswerReviewModal';
 import { BranchEscalationModal } from './BranchEscalationModal';
 import { CEC_REGIONS } from '../../data/cecRegions';
 import { exportCasesToExcel } from '../../utils/exportExcel';
-import { IssueDisplay } from '../common/IssueBadge';
-import { CaseStatusBadge } from '../common/StatusBadge';
-import { DestinationCell, DuplicateChip, EmailCountChip, OrderRefChip, ReportedAtCell } from '../common/CecAssignment';
+import { ISSUE_CATEGORY_META, IssueDisplay, UrgencyBadge } from '../common/IssueBadge';
+import { CaseStatusBadge, getCaseStatusLabel } from '../common/StatusBadge';
+import { DestinationCell, OrderRefChip, ReportedAtCell, TrackingCell } from '../common/CecAssignment';
 import { DateRangeFilter } from '../common/DateRangeFilter';
+import { SearchBox } from '../common/SearchBox';
 import { rowOpenProps } from '../../utils/rowOpen';
-import {
-  Building2,
-  Filter,
-  CheckCircle2,
-  PhoneForwarded,
-  Eye,
-  AlertTriangle,
-  FileSpreadsheet,
-  RefreshCw
-} from 'lucide-react';
+import type { IssueCategory } from '../../types/case';
+import { Building2, CheckCircle2, PhoneForwarded, FileSpreadsheet, RefreshCw } from 'lucide-react';
 
 export const CentralQueue: React.FC = () => {
   const {
     filteredCases,
     statusFilter,
-    setStatusFilter,
     categoryFilter,
     setCategoryFilter,
-    syncParcelTracking,
-    refreshData,
-    isRefreshing,
-    counts
+    syncParcelTracking
   } = useCases();
 
   // Modals state
@@ -69,16 +58,6 @@ export const CentralQueue: React.FC = () => {
     );
   };
 
-  const statusTabs = [
-    { key: 'ALL', label: 'ทั้งหมด', count: counts.total },
-    { key: 'PENDING_CEC_ASSIGNMENT', label: 'รอระบุ CEC', count: counts.pendingCec, isPending: true },
-    { key: 'WAITING_CEC_REPLY', label: 'รอ CEC ตอบ', count: counts.waitingCec },
-    { key: 'WAITING_CENTRAL_REVIEW', label: 'รอตรวจคำตอบ', count: counts.waitingReview, highlight: true },
-    { key: 'SLA_EXCEEDED', label: 'เกิน SLA 3 วัน', count: counts.slaExceeded, isDanger: true },
-    { key: 'CENTRAL_CONTACT_BRANCH', label: 'โทรสาขาแล้ว', count: counts.branchEscalated },
-    { key: 'CLOSED', label: 'ปิดแล้ว', count: counts.closed }
-  ];
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* Content Header */}
@@ -92,7 +71,7 @@ export const CentralQueue: React.FC = () => {
             <p>เห็นและจัดการเคสทั้งหมดที่ร้านค้าแจ้งผ่าน MyOrder • เคสส่งตรงถึง CEC อัตโนมัติ • ควบคุม SLA 3 วัน</p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
             {/* Export Excel Button */}
             <button
               type="button"
@@ -103,19 +82,6 @@ export const CentralQueue: React.FC = () => {
             >
               <FileSpreadsheet size={16} color="#059669" />
               <span>Export Excel</span>
-            </button>
-
-            {/* Quick Refresh Button */}
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => refreshData()}
-              disabled={isRefreshing}
-              style={{ fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.4rem', borderColor: '#CBD5E1', color: '#334155' }}
-              title="รีเฟรชข้อมูลพัสดุและคำนวณ SLA ล่าสุด"
-            >
-              <RefreshCw size={15} className={isRefreshing ? 'spin-animation' : ''} />
-              <span>{isRefreshing ? 'กำลังรีเฟรช...' : 'รีเฟรชข้อมูล'}</span>
             </button>
 
             {blankCecCases.length > 0 && (
@@ -131,27 +97,6 @@ export const CentralQueue: React.FC = () => {
               </button>
             )}
 
-            {counts.waitingReview > 0 && (
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => setStatusFilter('WAITING_CENTRAL_REVIEW')}
-                style={{ background: '#4F46E5', fontSize: '0.82rem', padding: '0.45rem 0.85rem' }}
-              >
-                <CheckCircle2 size={15} /> รอรีวิว {counts.waitingReview} เคส
-              </button>
-            )}
-
-            {counts.slaExceeded > 0 && (
-              <button
-                type="button"
-                className="btn-danger"
-                onClick={() => setStatusFilter('SLA_EXCEEDED')}
-                style={{ fontSize: '0.82rem', padding: '0.45rem 0.85rem' }}
-              >
-                <AlertTriangle size={15} /> เกิน SLA {counts.slaExceeded} เคส
-              </button>
-            )}
           </div>
         </div>
 
@@ -175,73 +120,43 @@ export const CentralQueue: React.FC = () => {
           </div>
         )}
 
-        {/* Filter bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', paddingTop: '0.25rem', borderTop: '1px solid #F1F5F9' }}>
-          {/* Status Tabs */}
-          <div className="status-tabs-row">
-            {statusTabs.map(tab => (
-              <button
-                key={tab.key}
-                type="button"
-                className={`status-tab-btn ${statusFilter === tab.key ? 'active' : ''}`}
-                style={
-                  tab.highlight && statusFilter !== tab.key
-                    ? { borderColor: '#818CF8', background: '#EEF2FF', color: '#3730A3' }
-                    : tab.isDanger && statusFilter !== tab.key
-                    ? { borderColor: '#FCA5A5', background: '#FEF2F2', color: '#991B1B' }
-                    : tab.isPending && tab.count > 0 && statusFilter !== tab.key
-                    ? { borderColor: '#FDBA74', background: '#FFF7ED', color: '#C2410C' }
-                    : {}
-                }
-                onClick={() => setStatusFilter(tab.key)}
-              >
-                <span>{tab.label}</span>
-                <span className="tab-num">{tab.count}</span>
-              </button>
+        {/* Search + filters (case status is picked from the sidebar) */}
+        <div className="list-toolbar" style={{ paddingTop: '0.75rem', borderTop: '1px solid #F1F5F9' }}>
+          <SearchBox />
+          <select
+            className="form-control"
+            style={{ padding: '0.4rem 0.5rem', fontSize: '0.8rem', width: 'auto' }}
+            value={cecFilter}
+            onChange={e => setCecFilter(e.target.value)}
+            aria-label="กลุ่ม CEC"
+          >
+            <option value="ALL">ทุก CEC (1-14)</option>
+            <option value="NONE">ยังไม่ระบุ CEC</option>
+            {CEC_REGIONS.map(cec => (
+              <option key={cec.id} value={cec.id.toString()}>
+                {cec.code}
+              </option>
             ))}
-          </div>
-
-          {/* Secondary Filters */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--thp-muted)' }}>
-              <Filter size={14} />
-              <span>CEC เขต:</span>
-              <select
-                className="form-control"
-                style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', width: '130px' }}
-                value={cecFilter}
-                onChange={e => setCecFilter(e.target.value)}
-              >
-                <option value="ALL">ทุกเขต (1-14)</option>
-                <option value="NONE">ยังไม่ระบุ CEC</option>
-                {CEC_REGIONS.map(cec => (
-                  <option key={cec.id} value={cec.id.toString()}>
-                    {cec.code}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--thp-muted)' }}>
-              <span>ปัญหา:</span>
-              <select
-                className="form-control"
-                style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', width: '140px' }}
-                value={categoryFilter}
-                onChange={e => setCategoryFilter(e.target.value)}
-              >
-                <option value="ALL">ทุกประเภทปัญหา</option>
-                <option value="DELAYED_DELIVERY">พัสดุล่าช้า</option>
-                <option value="NOT_RECEIVED">ยังไม่ได้รับของ</option>
-                <option value="WRONG_BRANCH">ส่งผิดสาขา/หลง</option>
-                <option value="DAMAGED_PARCEL">ชำรุดเสียหาย</option>
-                <option value="CANNOT_LOCATE">ค้นหาไม่พบ</option>
-                <option value="EXPEDITE_REQUEST">ขอเร่งนำส่ง</option>
-              </select>
-            </div>
-
-            <DateRangeFilter idPrefix="central-date" />
-          </div>
+          </select>
+          <select
+            className="form-control"
+            style={{ padding: '0.4rem 0.5rem', fontSize: '0.8rem', width: 'auto' }}
+            value={categoryFilter}
+            onChange={e => setCategoryFilter(e.target.value)}
+            aria-label="ประเภทปัญหา"
+          >
+            <option value="ALL">ทุกปัญหา</option>
+            {(Object.keys(ISSUE_CATEGORY_META) as IssueCategory[]).map(key => (
+              <option key={key} value={key}>
+                {ISSUE_CATEGORY_META[key].shortLabel}
+              </option>
+            ))}
+          </select>
+          <DateRangeFilter idPrefix="central-date" />
+          <span className="list-count">
+            {statusFilter !== 'ALL' && <strong>{getCaseStatusLabel(statusFilter)} • </strong>}
+            {displayCases.length} เคส
+          </span>
         </div>
       </div>
 
@@ -251,66 +166,39 @@ export const CentralQueue: React.FC = () => {
           <table className="case-table">
             <thead>
               <tr>
-                <th>Case ID / เลขพัสดุ</th>
+                <th>เลขพัสดุ</th>
+                <th>ปัญหา</th>
+                <th>ความเร่งด่วน</th>
+                <th>สถานะ</th>
+                <th>SLA</th>
                 <th>วันเวลาที่แจ้ง</th>
                 <th>ร้านค้า / ผู้แจ้ง</th>
-                <th>ปลายทาง & กลุ่ม CEC</th>
-                <th>ปัญหา & รายละเอียดคำร้อง</th>
-                <th>สถานะเคส</th>
-                <th>SLA Timer (3 วัน)</th>
-                <th style={{ textAlign: 'right' }}>การดำเนินการ</th>
+                <th>ปลายทาง & CEC</th>
+                <th style={{ textAlign: 'right' }}></th>
               </tr>
             </thead>
             <tbody>
               {displayCases.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
                     ไม่พบเคสที่ตรงกับเงื่อนไขการค้นหาหรือตัวกรอง
                   </td>
                 </tr>
               ) : (
                 displayCases.map(item => (
                   <tr key={item.id} {...rowOpenProps(() => setSelectedCaseForDetail(item))}>
-                    {/* Case & Tracking */}
                     <td>
-                      <div className="tracking-pill">{item.trackingNumber}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '2px' }}>
-                        <span className="case-id-sub">{item.id}</span>
-                        <EmailCountChip caseItem={item} />
-                      </div>
-                      <DuplicateChip caseItem={item} />
+                      <TrackingCell caseItem={item} />
                     </td>
                     <td>
-                      <ReportedAtCell iso={item.createdAt} />
+                      <IssueDisplay category={item.category} inquiry={item.customerInquiry} />
                     </td>
-
-                    {/* Shop */}
                     <td>
-                      <div style={{ fontWeight: 600, color: 'var(--thp-dark)' }}>{item.companyName}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>{item.contactPerson}</div>
-                      <OrderRefChip caseItem={item} />
+                      <UrgencyBadge urgency={item.urgency} />
                     </td>
-
-                    {/* Destination & CEC */}
-                    <td>
-                      <DestinationCell caseItem={item} showHint />
-                    </td>
-
-                    {/* Category & Problem Details */}
-                    <td>
-                      <IssueDisplay
-                        category={item.category}
-                        urgency={item.urgency}
-                        inquiry={item.customerInquiry}
-                      />
-                    </td>
-
-                    {/* Status */}
                     <td>
                       <CaseStatusBadge status={item.status} />
                     </td>
-
-                    {/* SLA Timer */}
                     <td>
                       <SlaBadge
                         deadlineIso={item.slaDeadline}
@@ -321,6 +209,17 @@ export const CentralQueue: React.FC = () => {
                         routeType={item.slaRouteType}
                         retentionDeadline={item.retentionDeadline}
                       />
+                    </td>
+                    <td>
+                      <ReportedAtCell iso={item.createdAt} />
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--thp-dark)' }}>{item.companyName}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>{item.contactPerson}</div>
+                      <OrderRefChip caseItem={item} />
+                    </td>
+                    <td>
+                      <DestinationCell caseItem={item} showHint />
                     </td>
 
                     {/* Actions */}
@@ -364,16 +263,6 @@ export const CentralQueue: React.FC = () => {
                           </button>
                         )}
 
-                        {/* View Full Detail */}
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
-                          onClick={() => setSelectedCaseForDetail(item)}
-                          title="ดูรายละเอียด ไทม์ไลน์ และแชท"
-                        >
-                          <Eye size={13} /> รายละเอียด
-                        </button>
                       </div>
                     </td>
                   </tr>

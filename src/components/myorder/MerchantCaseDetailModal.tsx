@@ -5,7 +5,7 @@ import { confirmDialog } from '../../utils/dialog';
 import { CEC_REGIONS } from '../../data/cecRegions';
 import { TrackingTimeline } from '../common/TrackingTimeline';
 import { SlaBadge } from '../common/SlaBadge';
-import { IssueDisplay } from '../common/IssueBadge';
+import { IssueDisplay, UrgencyBadge } from '../common/IssueBadge';
 import { CaseProgressStepper, LatestUpdate, MerchantStatusBadge } from './CaseProgress';
 import { EmailDispatchModal } from './EmailDispatchModal';
 import { EMAIL_REQUEST_TYPE_LABEL } from '../../utils/emailTemplates';
@@ -142,7 +142,10 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
                   <div style={{ color: 'var(--thp-muted)' }}>
                     คำสั่งซื้อ {caseItem.myOrderRef.orderId} • แจ้งเมื่อ {new Date(caseItem.createdAt).toLocaleString('th-TH')}
                   </div>
-                  <IssueDisplay category={caseItem.category} urgency={caseItem.urgency} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                    <IssueDisplay category={caseItem.category} />
+                    <UrgencyBadge urgency={caseItem.urgency} />
+                  </div>
                   <div style={{ whiteSpace: 'pre-wrap' }}>{caseItem.customerInquiry}</div>
                 </div>
 

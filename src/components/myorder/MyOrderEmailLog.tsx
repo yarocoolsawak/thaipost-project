@@ -8,6 +8,7 @@ import { MerchantStatusBadge } from './CaseProgress';
 import { MetricCard } from './MerchantOrders';
 import { rowOpenProps } from '../../utils/rowOpen';
 import { MailCheck, Mail, Store, UserCog, Paperclip, Eye, CalendarClock } from 'lucide-react';
+import { SearchBox } from '../common/SearchBox';
 
 interface EmailRow {
   email: OfficialEmailRecord;
@@ -61,7 +62,9 @@ export const MyOrderEmailLog: React.FC = () => {
             </h1>
             <p>ขอตีกลับ / เปลี่ยนที่อยู่ / แนบหลักฐาน — ทุกฉบับที่ร้านค้าหรือแอดมิน MyOrder ส่งถึง ปณท</p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
+        </div>
+        <div className="list-toolbar" style={{ paddingTop: '0.75rem', borderTop: '1px solid #F1F5F9' }}>
+            <SearchBox placeholder="ค้นหาเลขพัสดุ / เลขคำสั่งซื้อ / หัวข้อ..." />
             <select className="form-control" style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem' }} value={typeFilter} onChange={e => setTypeFilter(e.target.value as typeof typeFilter)}>
               <option value="ALL">ทุกประเภทคำร้อง</option>
               {(Object.keys(EMAIL_REQUEST_TYPE_LABEL) as EmailRequestType[]).map(t => (
@@ -79,7 +82,6 @@ export const MyOrderEmailLog: React.FC = () => {
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
-          </div>
         </div>
       </div>
 

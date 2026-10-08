@@ -11,7 +11,8 @@ import { LatestUpdate } from './CaseProgress';
 import { rowOpenProps } from '../../utils/rowOpen';
 import { EmailDispatchModal } from './EmailDispatchModal';
 import { EmailCountChip } from '../common/CecAssignment';
-import { ShoppingBag, AlertTriangle, Link2, Package, Truck, CheckCircle2, Eye, Mail } from 'lucide-react';
+import { SearchBox } from '../common/SearchBox';
+import { ShoppingBag, AlertTriangle, Link2, Eye, Mail } from 'lucide-react';
 
 type OrderFilter = 'ALL' | MyOrderStatus | 'HAS_CASE';
 
@@ -46,18 +47,12 @@ export const MerchantOrders: React.FC = () => {
     );
   });
 
-  const stats = {
-    total: shopOrders.length,
-    shipped: shopOrders.filter(o => o.orderStatus === 'SHIPPED').length,
-    delivered: shopOrders.filter(o => o.orderStatus === 'DELIVERED').length,
-    withCase: shopOrders.filter(o => o.caseId && caseOf(o)?.status !== 'CLOSED').length
-  };
-
+  const countStatus = (status: MyOrderStatus) => shopOrders.filter(o => o.orderStatus === status).length;
   const filterTabs: { key: OrderFilter; label: string; count: number }[] = [
     { key: 'ALL', label: 'ทั้งหมด', count: shopOrders.length },
-    { key: 'READY_TO_SHIP', label: 'รอจัดส่ง', count: shopOrders.filter(o => o.orderStatus === 'READY_TO_SHIP').length },
-    { key: 'SHIPPED', label: 'จัดส่งแล้ว', count: stats.shipped },
-    { key: 'DELIVERED', label: 'ส่งถึงแล้ว', count: stats.delivered },
+    { key: 'READY_TO_SHIP', label: 'รอจัดส่ง', count: countStatus('READY_TO_SHIP') },
+    { key: 'SHIPPED', label: 'จัดส่งแล้ว', count: countStatus('SHIPPED') },
+    { key: 'DELIVERED', label: 'ส่งถึงแล้ว', count: countStatus('DELIVERED') },
     { key: 'HAS_CASE', label: 'มีการแจ้งปัญหา', count: shopOrders.filter(o => o.caseId).length }
   ];
 
@@ -103,7 +98,9 @@ export const MerchantOrders: React.FC = () => {
           </div>
         )}
 
-        <div className="status-tabs-row">
+        <div className="list-toolbar" style={{ paddingTop: '0.75rem', borderTop: '1px solid #F1F5F9' }}>
+          <SearchBox placeholder="ค้นหาเลขคำสั่งซื้อ / เลขพัสดุ / ลูกค้า..." />
+          <div className="status-tabs-row">
           {filterTabs.map(tab => (
             <button
               key={tab.key}
@@ -115,14 +112,8 @@ export const MerchantOrders: React.FC = () => {
               <span className="tab-num">{tab.count}</span>
             </button>
           ))}
+          </div>
         </div>
-      </div>
-
-      <div className="metrics-grid">
-        <MetricCard label="คำสั่งซื้อทั้งหมด" value={stats.total} icon={<Package size={22} color="#0D9488" />} bg="#F0FDFA" />
-        <MetricCard label="อยู่ระหว่างจัดส่ง" value={stats.shipped} icon={<Truck size={22} color="#B45309" />} bg="#FFFBEB" />
-        <MetricCard label="ส่งถึงแล้ว" value={stats.delivered} icon={<CheckCircle2 size={22} color="#047857" />} bg="#ECFDF5" />
-        <MetricCard label="ปัญหาที่กำลังดำเนินการ" value={stats.withCase} icon={<AlertTriangle size={22} color="#C2410C" />} bg="#FFF7ED" />
       </div>
 
       <div className="case-table-card">

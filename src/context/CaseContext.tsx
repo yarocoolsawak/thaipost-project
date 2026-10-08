@@ -13,6 +13,7 @@ import {
   calculateRetentionDeadline
 } from '../utils/slaCalculator';
 import { notify } from '../utils/dialog';
+import { matchesCaseSearch } from '../utils/caseSearch';
 
 export type TrackingSyncResult = 'NO_CHANGE' | 'UPDATED' | 'CEC_ASSIGNED';
 
@@ -799,15 +800,7 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Search query
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      const matchId = c.id.toLowerCase().includes(q);
-      const matchTracking = c.trackingNumber.toLowerCase().includes(q);
-      const matchCompany = c.companyName.toLowerCase().includes(q);
-      const matchReceiver = c.parcelInfo.receiverName.toLowerCase().includes(q);
-      const matchInquiry = c.customerInquiry.toLowerCase().includes(q);
-      return matchId || matchTracking || matchCompany || matchReceiver || matchInquiry;
-    }
+    if (!matchesCaseSearch(c, searchQuery)) return false;
 
     return true;
   });

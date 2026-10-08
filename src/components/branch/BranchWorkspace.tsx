@@ -3,22 +3,23 @@ import { useCases } from '../../context/CaseContext';
 import type { CaseItem } from '../../types/case';
 import { CaseDetailModal } from '../common/CaseDetailModal';
 import { SlaBadge } from '../common/SlaBadge';
-import { IssueDisplay } from '../common/IssueBadge';
-import { CaseStatusBadge } from '../common/StatusBadge';
-import { ReportedAtCell } from '../common/CecAssignment';
+import { IssueDisplay, UrgencyBadge } from '../common/IssueBadge';
+import { CaseStatusBadge, getCaseStatusLabel } from '../common/StatusBadge';
+import { ReportedAtCell, TrackingCell } from '../common/CecAssignment';
 import { DateRangeFilter } from '../common/DateRangeFilter';
+import { SearchBox } from '../common/SearchBox';
 import { rowOpenProps } from '../../utils/rowOpen';
 import { notify } from '../../utils/dialog';
 import {
   Package,
-  CheckCircle2,
-  Eye
+  CheckCircle2
 } from 'lucide-react';
 
 export const BranchWorkspace: React.FC = () => {
   const {
     cases,
-    dateScopedCases,
+    filteredCases,
+    statusFilter,
     selectedBranchName,
     setSelectedBranchName,
     addChatMessage
@@ -33,12 +34,8 @@ export const BranchWorkspace: React.FC = () => {
     new Set(cases.map(c => c.assignedBranchName || c.parcelInfo.destPostOffice))
   );
 
-  const branchCases = dateScopedCases.filter(
-    c =>
-      (c.assignedBranchName && c.assignedBranchName.includes(selectedBranchName.split(' ')[0])) ||
-      c.status === 'CENTRAL_CONTACT_BRANCH' ||
-      c.status === 'SLA_EXCEEDED'
-  );
+  // This branch's cases plus anything escalated to branches (scoped in the case context with sidebar status, search and date)
+  const branchCases = filteredCases;
 
   const handleUpdatePhysicalStatus = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +69,6 @@ export const BranchWorkspace: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <DateRangeFilter idPrefix="branch-date" />
             <span style={{ fontSize: '0.82rem', color: 'var(--thp-muted)' }}>เลือกสาขาปลายทาง:</span>
             <select
               className="form-control"
@@ -88,6 +84,15 @@ export const BranchWorkspace: React.FC = () => {
             </select>
           </div>
         </div>
+
+        <div className="list-toolbar" style={{ paddingTop: '0.75rem', borderTop: '1px solid #F1F5F9' }}>
+          <SearchBox />
+          <DateRangeFilter idPrefix="branch-date" />
+          <span className="list-count">
+            {statusFilter !== 'ALL' && <strong>{getCaseStatusLabel(statusFilter)} • </strong>}
+            {branchCases.length} เคส
+          </span>
+        </div>
       </div>
 
       {/* Branch Escalated Case List */}
@@ -96,21 +101,22 @@ export const BranchWorkspace: React.FC = () => {
           <table className="case-table">
             <thead>
               <tr>
-                <th>Case ID / เลขพัสดุ</th>
-                <th>วันเวลาที่แจ้ง</th>
-                <th>ร้านค้า (MyOrder)</th>
-                <th>ผู้รับปลายทาง</th>
-                <th>ปัญหา & คำร้อง</th>
-                <th>สถานะการประสานงาน</th>
+                <th>เลขพัสดุ</th>
+                <th>ปัญหา</th>
+                <th>ความเร่งด่วน</th>
+                <th>สถานะ</th>
+                <th>SLA</th>
                 <th>บันทึกสายตรงจากส่วนกลาง</th>
-                <th>SLA Timer</th>
-                <th style={{ textAlign: 'right' }}>การดำเนินการ</th>
+                <th>วันเวลาที่แจ้ง</th>
+                <th>ร้านค้า</th>
+                <th>ผู้รับปลายทาง</th>
+                <th style={{ textAlign: 'right' }}></th>
               </tr>
             </thead>
             <tbody>
               {branchCases.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--thp-muted)' }}>
                     ไม่มีเคสที่ถูกยกระดับหรือติดต่อมายังสาขานี้
                   </td>
                 </tr>
@@ -120,34 +126,27 @@ export const BranchWorkspace: React.FC = () => {
                   return (
                     <tr key={item.id} {...rowOpenProps(() => setSelectedCaseDetail(item))}>
                       <td>
-                        <div className="tracking-pill">{item.trackingNumber}</div>
-                        <div className="case-id-sub">{item.id}</div>
+                        <TrackingCell caseItem={item} />
                       </td>
                       <td>
-                        <ReportedAtCell iso={item.createdAt} />
+                        <IssueDisplay category={item.category} inquiry={item.customerInquiry} />
                       </td>
                       <td>
-                        <div style={{ fontWeight: 600 }}>{item.companyName}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>
-                          {item.parcelInfo.destPostOffice}
-                        </div>
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{item.parcelInfo.receiverName}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>
-                          {item.parcelInfo.receiverPhone}
-                        </div>
-                      </td>
-                      <td>
-                        <IssueDisplay
-                          category={item.category}
-                          urgency={item.urgency}
-                          inquiry={item.customerInquiry}
-                          compact={true}
-                        />
+                        <UrgencyBadge urgency={item.urgency} />
                       </td>
                       <td>
                         <CaseStatusBadge status={item.status} />
+                      </td>
+                      <td>
+                        <SlaBadge
+                          deadlineIso={item.slaDeadline}
+                          isExceeded={item.isSlaExceeded}
+                          status={item.status}
+                          bagOpenedAt={item.bagOpenedAt || item.parcelInfo?.bagOpenedAt}
+                          targetDays={item.slaTargetDays}
+                          routeType={item.slaRouteType}
+                          retentionDeadline={item.retentionDeadline}
+                        />
                       </td>
                       <td>
                         {latestBranchLog ? (
@@ -175,15 +174,16 @@ export const BranchWorkspace: React.FC = () => {
                         )}
                       </td>
                       <td>
-                        <SlaBadge
-                          deadlineIso={item.slaDeadline}
-                          isExceeded={item.isSlaExceeded}
-                          status={item.status}
-                          bagOpenedAt={item.bagOpenedAt || item.parcelInfo?.bagOpenedAt}
-                          targetDays={item.slaTargetDays}
-                          routeType={item.slaRouteType}
-                          retentionDeadline={item.retentionDeadline}
-                        />
+                        <ReportedAtCell iso={item.createdAt} />
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{item.companyName}</div>
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{item.parcelInfo.receiverName}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>
+                          {item.parcelInfo.receiverPhone}
+                        </div>
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -197,15 +197,6 @@ export const BranchWorkspace: React.FC = () => {
                             }}
                           >
                             บันทึกผลนำจ่าย
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
-                            onClick={() => setSelectedCaseDetail(item)}
-                          >
-                            <Eye size={13} />
                           </button>
                         </div>
                       </td>

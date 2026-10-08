@@ -11,7 +11,6 @@ import {
   Package,
   Building2,
   MapPin,
-  Search,
   AlertOctagon,
   ShieldCheck,
   RotateCw,
@@ -25,8 +24,6 @@ export const Header: React.FC = () => {
     setRole,
     selectedCecId,
     setSelectedCecId,
-    searchQuery,
-    setSearchQuery,
     counts,
     isRefreshing,
     refreshData,
@@ -109,7 +106,7 @@ export const Header: React.FC = () => {
           ))}
         </div>
 
-        {/* Right: Search & SLA alerts */}
+        {/* Right: SLA alert & data actions */}
         <div className="header-actions">
           {/* CEC Selector if role is CEC */}
           {role === 'CEC' && (
@@ -160,17 +157,6 @@ export const Header: React.FC = () => {
               </select>
             </div>
           )}
-
-          {/* Quick Search */}
-          <div className="search-bar-header">
-            <Search size={15} className="search-icon-pos" />
-            <input
-              type="text"
-                            placeholder={isMyOrderRole ? 'ค้นหาเลขคำสั่งซื้อ / เลขพัสดุ...' : 'ค้นหาเลขพัสดุ / Case ID / บริษัท...'}
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-          </div>
 
           {/* SLA Warning Alert Button */}
           {!isMyOrderRole && counts.slaExceeded > 0 && (

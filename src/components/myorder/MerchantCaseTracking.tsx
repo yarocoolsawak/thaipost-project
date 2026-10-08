@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useCases } from '../../context/CaseContext';
 import { useMyOrder } from '../../context/MyOrderContext';
 import type { CaseItem } from '../../types/case';
-import { IssueDisplay } from '../common/IssueBadge';
+import { IssueDisplay, UrgencyBadge } from '../common/IssueBadge';
 import { DateRangeFilter } from '../common/DateRangeFilter';
+import { SearchBox } from '../common/SearchBox';
+import { matchesCaseSearch } from '../../utils/caseSearch';
 import { LatestUpdate, latestActivity } from './CaseProgress';
 import { MerchantCaseDetailModal } from './MerchantCaseDetailModal';
 import { rowOpenProps } from '../../utils/rowOpen';
-import { ClipboardList, Eye, CheckCircle2 } from 'lucide-react';
+import { ClipboardList, CheckCircle2 } from 'lucide-react';
 
 // Shops see what was last done on each report — never the internal case status
 export const MerchantCaseTracking: React.FC = () => {
@@ -15,15 +17,8 @@ export const MerchantCaseTracking: React.FC = () => {
   const { currentShop, myOrderCases: shopCases } = useMyOrder();
   const [viewCase, setViewCase] = useState<CaseItem | null>(null);
 
-  const q = searchQuery.trim().toLowerCase();
   const visible = shopCases
-    .filter(
-      c =>
-        !q ||
-        c.id.toLowerCase().includes(q) ||
-        c.trackingNumber.toLowerCase().includes(q) ||
-        c.myOrderRef.orderId.toLowerCase().includes(q)
-    )
+    .filter(c => matchesCaseSearch(c, searchQuery))
     // Most recently updated first
     .sort((a, b) => (latestActivity(b)?.timestamp || b.createdAt).localeCompare(latestActivity(a)?.timestamp || a.createdAt));
 
@@ -38,38 +33,32 @@ export const MerchantCaseTracking: React.FC = () => {
             </h1>
             <p>{currentShop.name} • ดูอัปเดตล่าสุดจากไปรษณีย์ไทยของแต่ละเรื่อง ({visible.length} เรื่อง)</p>
           </div>
+        </div>
+        <div className="list-toolbar" style={{ paddingTop: '0.75rem', borderTop: '1px solid #F1F5F9' }}>
+          <SearchBox placeholder="ค้นหาเลขพัสดุ / เลขคำสั่งซื้อ..." />
           <DateRangeFilter idPrefix="merchant-date" />
         </div>
       </div>
 
       {visible.length === 0 ? (
         <div className="merchant-case-card" style={{ alignItems: 'center', color: 'var(--thp-muted)', padding: '2.5rem' }}>
-          ไม่มีเรื่องที่แจ้งในช่วงวันที่นี้
+          ไม่พบเรื่องที่แจ้งตามเงื่อนไขนี้
         </div>
       ) : (
         visible.map(c => {
           const open = rowOpenProps(() => setViewCase(c));
           return (
             <div key={c.id} {...open} className={`merchant-case-card ${open.className}`}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', minWidth: 0, flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 800 }}>{c.myOrderRef.orderId}</span>
-                    <span className="tracking-pill">{c.trackingNumber}</span>
-                    <span className="case-id-sub">
-                      เคส {c.id} • แจ้งเมื่อ {new Date(c.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
-                    </span>
-                  </div>
-                  <IssueDisplay category={c.category} urgency={c.urgency} inquiry={c.customerInquiry} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span className="tracking-pill">{c.trackingNumber}</span>
+                  <IssueDisplay category={c.category} inquiry={c.customerInquiry} />
+                  <UrgencyBadge urgency={c.urgency} />
                 </div>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
-                  onClick={() => setViewCase(c)}
-                >
-                  <Eye size={13} /> ดูรายละเอียด
-                </button>
+                <span className="case-id-sub">
+                  คำสั่งซื้อ {c.myOrderRef.orderId} • เคส {c.id} • แจ้งเมื่อ{' '}
+                  {new Date(c.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
+                </span>
               </div>
 
               <LatestUpdate caseItem={c} />

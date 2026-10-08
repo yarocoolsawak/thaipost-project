@@ -49,7 +49,7 @@ const MainContent: React.FC = () => {
             currentTab === 'EMAILS' ? (
               <MyOrderEmailLog />
             ) : (
-              <MyOrderAdminMonitor onOpenBulkReport={() => setIsBulkReportOpen(true)} />
+              <MyOrderAdminMonitor />
             )
           ) : currentTab === 'DASHBOARD' ? (
             <AnalyticsDashboard />

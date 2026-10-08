@@ -202,7 +202,7 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
                 <select className="form-control" value={urgency} onChange={e => setUrgency(e.target.value as UrgencyLevel)}>
                   <option value="NORMAL">ปกติ</option>
                   <option value="HIGH">ด่วน (ลูกค้าร้องเรียน)</option>
-                  <option value="CRITICAL">ด่วนที่สุด (สินค้ามูลค่าสูง)</option>
+                  <option value="CRITICAL">ด่วนมาก (สินค้ามูลค่าสูง)</option>
                 </select>
               </div>
             </div>
