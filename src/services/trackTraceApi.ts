@@ -780,15 +780,48 @@ const DELIVERY_STAFF = [
 ];
 const OUT_FOR_DELIVERY = /ระหว่างการนำจ่าย|ออกนำจ่าย|นำจ่ายสำเร็จ|นำจ่ายไม่สำเร็จ|ติดต่อผู้รับไม่ได้/;
 
+const hashOf = (text: string) => [...text].reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) % 100003, 7);
+
+// Mock e-signature image (what the delivery officer's handheld captures when the recipient signs)
+function buildSignatureImage(parcel: ParcelInfo, signer: string, signedAt?: string): string {
+  let seed = hashOf(parcel.trackingNumber + signer);
+  const rand = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  let x = 70;
+  let d = `M ${x} ${110 + rand() * 10}`;
+  for (let i = 0; i < 9; i++) {
+    const nx = x + 22 + rand() * 18;
+    d += ` C ${x + 8} ${55 + rand() * 30}, ${nx - 8} ${140 + rand() * 25}, ${nx} ${95 + rand() * 25}`;
+    x = nx;
+  }
+  d += ` M 95 ${128 + rand() * 6} q 110 ${-18 - rand() * 10} ${210} ${-4}`;
+  const stamp = signedAt ? signedAt.slice(0, 16).replace('T', ' ') : '';
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' width='420' height='220' viewBox='0 0 420 220'>` +
+    `<rect width='420' height='220' rx='10' fill='#ffffff' stroke='#cbd5e1' stroke-width='2'/>` +
+    `<text x='20' y='32' font-family='sans-serif' font-size='13' fill='#64748b'>ลายมือชื่อผู้รับ (e-Signature)</text>` +
+    `<path d='${d}' fill='none' stroke='#1e3a8a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/>` +
+    `<line x1='40' y1='160' x2='380' y2='160' stroke='#94a3b8' stroke-dasharray='5 4'/>` +
+    `<text x='210' y='182' font-family='sans-serif' font-size='14' font-weight='bold' fill='#0f172a' text-anchor='middle'>${signer}</text>` +
+    `<text x='210' y='204' font-family='sans-serif' font-size='11' fill='#64748b' text-anchor='middle'>${parcel.trackingNumber}${stamp ? ` • เซ็นรับ ${stamp}` : ''}</text>` +
+    `</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+// What QMS adds once the parcel is out for delivery (officer) and once it is signed for (signature image)
 export function withDeliveryStaff(parcel: ParcelInfo): ParcelInfo {
-  if (parcel.deliveryStaffName) return parcel;
+  let next = parcel;
   const outForDelivery = parcel.events.some(
     e => ['301', '304', '401', '501'].includes(e.statusCode || '') || OUT_FOR_DELIVERY.test(e.status)
   );
-  if (!outForDelivery) return parcel;
-  const hash = [...parcel.trackingNumber].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-  const [name, phone] = DELIVERY_STAFF[hash % DELIVERY_STAFF.length];
-  return { ...parcel, deliveryStaffName: name, deliveryStaffPhone: phone };
+  if (outForDelivery && !next.deliveryStaffName) {
+    const [name, phone] = DELIVERY_STAFF[hashOf(parcel.trackingNumber) % DELIVERY_STAFF.length];
+    next = { ...next, deliveryStaffName: name, deliveryStaffPhone: phone };
+  }
+  if (next.signerName && !next.signatureImageUrl) {
+    const signedEvent = [...parcel.events].reverse().find(e => e.statusCode === '501' || /นำจ่ายสำเร็จ/.test(e.status));
+    next = { ...next, signatureImageUrl: buildSignatureImage(parcel, next.signerName, signedEvent?.timestamp) };
+  }
+  return next;
 }
 
 // Every parcel held by the mock QMS carries its delivery officer once it is out for delivery

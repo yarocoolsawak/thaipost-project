@@ -1548,3 +1548,33 @@ button, input, select, textarea {
 .tel-link:hover {
   text-decoration: underline;
 }
+
+/* POD evidence thumbnails (delivery photo, recipient signature) */
+.pod-thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  cursor: zoom-in;
+}
+
+.pod-thumb img {
+  width: 96px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #CBD5E1;
+}
+
+.pod-thumb span {
+  font-size: 0.72rem;
+  color: var(--thp-slate);
+}
+
+.pod-thumb:hover img {
+  border-color: #0284C7;
+}

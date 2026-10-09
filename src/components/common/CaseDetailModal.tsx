@@ -54,7 +54,9 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
   const [newChatText, setNewChatText] = useState('');
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
-  const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ url: string; title: string } | null>(null);
+  const podPhotoUrl = caseItem.deliveryProofPhotoUrl || caseItem.parcelInfo?.deliveryProofPhotoUrl;
+  const signatureUrl = caseItem.parcelInfo?.signatureImageUrl;
 
   const slaInfo = evaluateCaseSla(caseItem);
 
@@ -474,41 +476,40 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                       <Camera size={15} color="#0284C7" />
                       <span>หลักฐานนำจ่าย (POD)</span>
                     </div>
-                    {caseItem.deliveryProofPhotoUrl || caseItem.parcelInfo?.deliveryProofPhotoUrl ? (
+                    {podPhotoUrl || signatureUrl ? (
                       <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#16A34A', background: '#DCFCE7', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                        มีภาพหลักฐาน
+                        มีหลักฐาน
                       </span>
                     ) : (
                       <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94A3B8', background: '#F1F5F9', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                        ยังไม่มีภาพถ่าย
+                        ยังไม่มีหลักฐาน
                       </span>
                     )}
                   </div>
 
-                  {caseItem.deliveryProofPhotoUrl || caseItem.parcelInfo?.deliveryProofPhotoUrl ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      <img
-                        src={caseItem.deliveryProofPhotoUrl || caseItem.parcelInfo?.deliveryProofPhotoUrl}
-                        alt="POD"
-                        onClick={() => setPreviewPhotoUrl(caseItem.deliveryProofPhotoUrl || caseItem.parcelInfo?.deliveryProofPhotoUrl || null)}
-                        style={{
-                          width: '64px',
-                          height: '46px',
-                          objectFit: 'cover',
-                          borderRadius: '6px',
-                          border: '1px solid #CBD5E1',
-                          cursor: 'pointer'
-                        }}
-                        title="คลิกเพื่อดูภาพขยาย"
-                      />
-                      <div style={{ fontSize: '0.8rem', color: 'var(--thp-slate)' }}>
-                        <div style={{ fontWeight: 600, color: '#15803D' }}>มีภาพถ่ายยืนยันนำจ่าย</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--thp-muted)' }}>คลิกดูภาพขยาย</div>
-                      </div>
+                  {podPhotoUrl || signatureUrl ? (
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      {podPhotoUrl && (
+                        <button type="button" className="pod-thumb" onClick={() => setPreview({ url: podPhotoUrl, title: 'ภาพถ่ายการนำส่งพัสดุ (POD)' })} title="คลิกเพื่อดูภาพขยาย">
+                          <img src={podPhotoUrl} alt="ภาพถ่ายนำจ่าย" />
+                          <span>ภาพถ่ายนำจ่าย</span>
+                        </button>
+                      )}
+                      {signatureUrl && (
+                        <button
+                          type="button"
+                          className="pod-thumb"
+                          onClick={() => setPreview({ url: signatureUrl, title: `ลายเซ็นผู้รับ: ${caseItem.parcelInfo.signerName}` })}
+                          title="คลิกเพื่อดูลายเซ็นขยาย"
+                        >
+                          <img src={signatureUrl} alt="ลายเซ็นผู้รับ" style={{ objectFit: 'contain', background: '#FFFFFF' }} />
+                          <span>ลายเซ็นผู้รับ</span>
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div style={{ fontSize: '0.78rem', color: 'var(--thp-muted)', lineHeight: 1.4 }}>
-                      ยังไม่มีภาพถ่ายในระบบ (โทรยืนยันกับผู้รับก่อนปิดเคส)
+                      ยังไม่มีภาพถ่ายหรือลายเซ็นในระบบ (โทรยืนยันกับผู้รับก่อนปิดเคส)
                     </div>
                   )}
 
@@ -1081,10 +1082,10 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
       )}
 
       {/* Image Zoom Modal */}
-      {previewPhotoUrl && (
+      {preview && (
         <div
           className="modal-backdrop"
-          onClick={() => setPreviewPhotoUrl(null)}
+          onClick={() => setPreview(null)}
           style={{ zIndex: 1300, background: 'rgba(0,0,0,0.75)' }}
         >
           <div
@@ -1094,15 +1095,15 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
               <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--thp-dark)' }}>
-                หลักฐานภาพถ่ายการนำส่งพัสดุ (POD)
+                {preview.title}
               </div>
-              <button type="button" className="close-btn" onClick={() => setPreviewPhotoUrl(null)}>
+              <button type="button" className="close-btn" onClick={() => setPreview(null)}>
                 <X size={20} />
               </button>
             </div>
             <img
-              src={previewPhotoUrl}
-              alt="POD Zoom"
+              src={preview.url}
+              alt={preview.title}
               style={{ width: '100%', height: 'auto', borderRadius: '8px', border: '1px solid #CBD5E1' }}
             />
             <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--thp-muted)', textAlign: 'center' }}>

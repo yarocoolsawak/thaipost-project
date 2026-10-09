@@ -92,6 +92,7 @@ export interface ParcelInfo {
   signerName?: string;
   deliveryStaffName?: string;       // พนักงานนำจ่าย — QMS ส่งมาเมื่อพัสดุออกนำจ่ายแล้ว
   deliveryStaffPhone?: string;
+  signatureImageUrl?: string;       // ภาพลายเซ็นผู้รับ (e-Signature) — QMS ส่งมาเมื่อเซ็นรับแล้ว
   weightKg: number;
   events: TrackingEvent[];
   bagOpenedAt?: string;             // วันเวลาที่เปิดถุง (ใช้นับเริ่ม SLA)

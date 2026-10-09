@@ -37,8 +37,9 @@ export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClos
     caseItem.parcelInfo?.events?.some(e => e.statusCode === '501' || e.statusCode === '901' || e.status.includes('นำจ่ายสำเร็จ') || e.status.includes('รับพัสดุ'));
 
   // 2. Photo Proof Evidence (POD)
-  const hasProofEvidence = !!caseItem.deliveryProofPhotoUrl || !!caseItem.parcelInfo?.deliveryProofPhotoUrl;
-  const proofUrl = caseItem.deliveryProofPhotoUrl || caseItem.parcelInfo?.deliveryProofPhotoUrl;
+  // A delivery photo or the recipient's signature both count as proof of delivery
+  const proofUrl = caseItem.deliveryProofPhotoUrl || caseItem.parcelInfo?.deliveryProofPhotoUrl || caseItem.parcelInfo?.signatureImageUrl;
+  const hasProofEvidence = !!proofUrl;
 
   // 3. Recipient Phone Confirmation State
   const initialRecipientConfirmed =
