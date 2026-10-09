@@ -90,6 +90,8 @@ export interface ParcelInfo {
   currentPostalStatus: string;
   currentStatusCode?: string;       // รหัสสถานะล่าสุดตาม THP Developer Guide (เช่น '501', '401', '301')
   signerName?: string;
+  deliveryStaffName?: string;       // พนักงานนำจ่าย — QMS ส่งมาเมื่อพัสดุออกนำจ่ายแล้ว
+  deliveryStaffPhone?: string;
   weightKg: number;
   events: TrackingEvent[];
   bagOpenedAt?: string;             // วันเวลาที่เปิดถุง (ใช้นับเริ่ม SLA)

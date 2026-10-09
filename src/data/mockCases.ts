@@ -1,10 +1,10 @@
 import type { CaseItem } from '../types/case';
-import { KNOWN_PARCELS, POD_SAMPLE_IMAGE } from '../services/trackTraceApi';
+import { KNOWN_PARCELS, POD_SAMPLE_IMAGE, withDeliveryStaff } from '../services/trackTraceApi';
 
 import { hoursAgo, hoursAhead } from './demoClock';
 
 // Every case is raised by a MyOrder shop from a shipped order (see src/data/myOrders.ts)
-export const INITIAL_CASES: CaseItem[] = [
+const SEED_CASES: CaseItem[] = [
   // ==========================================
   // เคสตัวอย่างที่ 1: แจ้งปิดงาน (ผู้รับได้ของแล้วแต่สถานะยังไม่สำเร็จ)
   // ==========================================
@@ -2607,3 +2607,6 @@ export const INITIAL_CASES: CaseItem[] = [
     parcelInfo: KNOWN_PARCELS['ED776512349TH']!
   },
 ];
+
+// Parcels that are already out for delivery carry their delivery officer, as QMS would report it
+export const INITIAL_CASES: CaseItem[] = SEED_CASES.map(c => ({ ...c, parcelInfo: withDeliveryStaff(c.parcelInfo) }));

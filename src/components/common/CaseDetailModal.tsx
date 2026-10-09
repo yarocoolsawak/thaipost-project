@@ -6,6 +6,7 @@ import { TrackingTimeline } from './TrackingTimeline';
 import { DuplicateChip, OrderRefChip } from './CecAssignment';
 import { CloseCaseModal } from './CloseCaseModal';
 import { UrgencyBadge } from './IssueBadge';
+import { CEC_REGIONS } from '../../data/cecRegions';
 import { evaluateCaseSla, formatThaiDate } from '../../utils/slaCalculator';
 import { CaseStatusBadge, getCategoryShortLabel, formatPostalStatus } from './StatusBadge';
 import {
@@ -48,6 +49,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 }) => {
   const { role, addChatMessage, cases } = useCases();
   const caseItem = cases.find(c => c.id === initialCaseItem.id) || initialCaseItem;
+  const cec = CEC_REGIONS.find(r => r.id === caseItem.assignedCecId);
   const [activeTab, setActiveTab] = useState<DetailTab>(initialTab);
   const [newChatText, setNewChatText] = useState('');
   const [isInternalNote, setIsInternalNote] = useState(false);
@@ -361,10 +363,33 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                     <span style={{ color: 'var(--thp-muted)' }}>ผู้รับ:</span>
                     <span>{caseItem.parcelInfo.receiverName} ({caseItem.parcelInfo.receiverPhone})</span>
 
-                    <span style={{ color: 'var(--thp-muted)' }}>กลุ่ม CEC:</span>
-                    <span style={{ color: '#4338CA', fontWeight: 600 }}>
-                      {caseItem.assignedCecName || 'รอระบุ CEC'}
-                    </span>
+                    <span style={{ color: 'var(--thp-muted)' }}>CEC:</span>
+                    {cec ? (
+                      <span>
+                        <span style={{ color: '#4338CA', fontWeight: 600 }}>{cec.name}</span>
+                        <br />
+                        <a href={`tel:${cec.phone}`} className="tel-link">โทร {cec.phone}</a>
+                      </span>
+                    ) : (
+                      <span style={{ color: '#94A3B8' }}>รอระบุ CEC (รอ QMS ยืนยันปลายทาง)</span>
+                    )}
+
+                    <span style={{ color: 'var(--thp-muted)' }}>คนนำจ่าย:</span>
+                    {caseItem.parcelInfo.deliveryStaffName ? (
+                      <span>
+                        <span style={{ fontWeight: 600 }}>{caseItem.parcelInfo.deliveryStaffName}</span>
+                        {caseItem.parcelInfo.deliveryStaffPhone && (
+                          <>
+                            <br />
+                            <a href={`tel:${caseItem.parcelInfo.deliveryStaffPhone}`} className="tel-link">
+                              โทร {caseItem.parcelInfo.deliveryStaffPhone}
+                            </a>
+                          </>
+                        )}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#94A3B8' }}>ยังไม่ออกนำจ่าย</span>
+                    )}
 
                     <span style={{ color: 'var(--thp-muted)' }}>ผู้เซ็นรับ:</span>
                     <span style={{ fontWeight: 600, color: caseItem.parcelInfo.signerName ? '#059669' : '#94A3B8' }}>

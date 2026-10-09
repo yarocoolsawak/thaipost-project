@@ -1535,3 +1535,16 @@ button, input, select, textarea {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Phone numbers staff can tap / click to call */
+.tel-link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0369A1;
+  text-decoration: none;
+  font-family: var(--font-en);
+}
+
+.tel-link:hover {
+  text-decoration: underline;
+}

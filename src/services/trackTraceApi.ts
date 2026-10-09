@@ -766,6 +766,34 @@ function registerParcel(spec: ParcelSpec) {
   }
 ].forEach(spec => registerParcel(spec as ParcelSpec));
 
+
+// Mock QMS: once a parcel goes out for delivery, QMS knows which delivery officer carries it
+const DELIVERY_STAFF = [
+  ['นายสมชาย ใจดี', '081-462-3105'],
+  ['นายประเสริฐ ทองมา', '089-318-7742'],
+  ['นายวีระ ศรีสุข', '086-507-2219'],
+  ['นางสาวกัญญา พรหมมา', '084-726-9031'],
+  ['นายธนพล แก้วกาญจนา', '082-193-4486'],
+  ['นายอนุชา บุญมาก', '087-640-5528'],
+  ['นายสุริยา คำแก้ว', '085-281-6673'],
+  ['นางสาวพิมพ์ชนก รุ่งเรือง', '083-954-1207']
+];
+const OUT_FOR_DELIVERY = /ระหว่างการนำจ่าย|ออกนำจ่าย|นำจ่ายสำเร็จ|นำจ่ายไม่สำเร็จ|ติดต่อผู้รับไม่ได้/;
+
+export function withDeliveryStaff(parcel: ParcelInfo): ParcelInfo {
+  if (parcel.deliveryStaffName) return parcel;
+  const outForDelivery = parcel.events.some(
+    e => ['301', '304', '401', '501'].includes(e.statusCode || '') || OUT_FOR_DELIVERY.test(e.status)
+  );
+  if (!outForDelivery) return parcel;
+  const hash = [...parcel.trackingNumber].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  const [name, phone] = DELIVERY_STAFF[hash % DELIVERY_STAFF.length];
+  return { ...parcel, deliveryStaffName: name, deliveryStaffPhone: phone };
+}
+
+// Every parcel held by the mock QMS carries its delivery officer once it is out for delivery
+for (const key of Object.keys(KNOWN_PARCELS)) KNOWN_PARCELS[key] = withDeliveryStaff(KNOWN_PARCELS[key]);
+
 /**
  * Pull the latest parcel status from QMS for a parcel we already hold (mock).
  * Returns the same object when there is nothing new.
@@ -778,11 +806,11 @@ export async function fetchTrackingUpdate(current: ParcelInfo): Promise<ParcelIn
   );
   if (!next) return current;
 
-  return {
+  return withDeliveryStaff({
     ...current,
     currentPostalStatus: next.postalStatus,
     events: [...current.events, { ...next.event, timestamp: formatEventTimestamp(new Date()) }]
-  };
+  });
 }
 
 export async function fetchThaiPostTrackAndTrace(trackingNumber: string): Promise<ParcelInfo> {
