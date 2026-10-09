@@ -11,7 +11,7 @@ export const MYORDER_CASE_FILTERS: {
   icon: React.ReactNode;
   badge?: 'warning' | 'info' | 'danger';
 }[] = [
-  { key: 'ALL', label: 'ทั้งหมด (All)', icon: <Layers size={16} /> },
+  { key: 'ALL', label: 'อยู่ระหว่างดำเนินการทั้งหมด', icon: <Layers size={16} /> },
   { key: 'PENDING_CEC', label: 'รอระบุ CEC', icon: <HelpCircle size={16} />, badge: 'warning' },
   { key: 'AT_CEC', label: 'CEC กำลังตรวจสอบ', icon: <Send size={16} />, badge: 'warning' },
   { key: 'ANSWERED', label: 'ได้รับคำตอบแล้ว', icon: <CheckCircle2 size={16} />, badge: 'info' },
@@ -32,6 +32,6 @@ export const matchesCaseFilter = (c: CaseItem, f: MyOrderCaseFilter) => {
     case 'CLOSED':
       return c.status === 'CLOSED';
     default:
-      return true;
+      return c.status !== 'CLOSED'; // ALL = everything still in progress
   }
 };

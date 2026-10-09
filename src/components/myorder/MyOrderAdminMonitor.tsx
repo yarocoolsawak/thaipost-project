@@ -31,7 +31,11 @@ export const MyOrderAdminMonitor: React.FC = () => {
   const { sort, sortCases, toggle } = useCaseSort();
 
   // MyOrder admin monitors every shop's cases (shop picker here, status filter in the sidebar)
-  const visible = myOrderCases.filter(c => matchesCaseSearch(c, searchQuery) && matchesCaseFilter(c, filter));
+  // Searching also finds closed cases, so a parcel can be looked up whatever its state
+  const searching = !!searchQuery.trim();
+  const visible = myOrderCases.filter(
+    c => matchesCaseSearch(c, searchQuery) && (matchesCaseFilter(c, filter) || (filter === 'ALL' && searching))
+  );
   const filterLabel = MYORDER_CASE_FILTERS.find(f => f.key === filter)?.label;
 
   return (

@@ -79,14 +79,13 @@ interface CaseContextType {
 
   // Badge counts
   counts: {
-    total: number;
+    open: number; // every case not closed yet
     newCases: number;
     pendingCec: number;
     waitingCec: number;
     waitingReview: number;
     slaExceeded: number;
     branchEscalated: number;
-    closed: number;
   };
 }
 
@@ -789,8 +788,11 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Status filter
-    if (statusFilter !== 'ALL' && c.status !== statusFilter) {
+    // Status filter: 'ALL' means every case still in progress; closed cases only show when picked
+    // (or when searching, so a closed case can still be found by its tracking number)
+    if (statusFilter === 'ALL') {
+      if (c.status === 'CLOSED' && !searchQuery.trim()) return false;
+    } else if (c.status !== statusFilter) {
       return false;
     }
 
@@ -809,14 +811,13 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Counts follow the date filter so tab numbers match the list below them
   const counted = dateScopedCases;
   const counts = {
-    total: counted.length,
+    open: counted.filter(c => c.status !== 'CLOSED').length,
     newCases: counted.filter(c => c.status === 'NEW').length,
     pendingCec: counted.filter(c => c.status === 'PENDING_CEC_ASSIGNMENT').length,
     waitingCec: counted.filter(c => c.status === 'WAITING_CEC_REPLY' || c.status === 'SENT_TO_CEC').length,
     waitingReview: counted.filter(c => c.status === 'WAITING_CENTRAL_REVIEW').length,
     slaExceeded: counted.filter(c => c.status === 'SLA_EXCEEDED').length,
-    branchEscalated: counted.filter(c => c.status === 'CENTRAL_CONTACT_BRANCH').length,
-    closed: counted.filter(c => c.status === 'CLOSED').length
+    branchEscalated: counted.filter(c => c.status === 'CENTRAL_CONTACT_BRANCH').length
   };
 
   return (

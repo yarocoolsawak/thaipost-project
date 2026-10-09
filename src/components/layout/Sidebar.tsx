@@ -114,7 +114,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="sidebar-title">สถานะเคส (Filter by Status)</div>
           {MYORDER_CASE_FILTERS.map(f => {
             const count = myOrderCases.filter(c => matchesCaseFilter(c, f.key)).length;
-            const showBadge = !f.badge || count > 0;
+            // Closed cases pile up over time: no count for them
+            const showBadge = f.key !== 'CLOSED' && (!f.badge || count > 0);
             return (
               <button
                 key={f.key}
@@ -170,7 +171,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 : 'คิวงานสาขาปลายทาง'}
             </span>
           </div>
-          <span className="count-badge">{counts.total}</span>
+          <span className="count-badge">{counts.open}</span>
         </button>
 
         <button
@@ -196,9 +197,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <div className="nav-item-left">
             <Layers size={16} />
-            <span>ทั้งหมด (All)</span>
+            <span>อยู่ระหว่างดำเนินการทั้งหมด</span>
           </div>
-          <span className="count-badge">{counts.total}</span>
+          <span className="count-badge">{counts.open}</span>
         </button>
 
         <button
@@ -278,7 +279,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <CheckCircle size={16} />
             <span>ปิดเคสแล้ว</span>
           </div>
-          <span className="count-badge">{counts.closed}</span>
         </button>
       </div>
     </aside>
