@@ -169,6 +169,21 @@ export const INITIAL_MYORDER_ORDERS: MyOrder[] = [
     shippedAt: hoursAgo(26)
   },
   {
+    orderId: 'MO-240921',
+    shopId: 'SHOP-03',
+    createdAt: hoursAgo(54),
+    customerName: 'คุณวรรณา ศรีสวัสดิ์',
+    customerPhone: '089-552-XXXX',
+    // Postal code typed wrong: the address is in Nakhon Ratchasima (30000)
+    shippingAddress: '45/2 ถ.มิตรภาพ ต.ในเมือง อ.เมืองนครราชสีมา จ.นครราชสีมา 38000',
+    items: [{ name: 'ลำโพงบลูทูธ กันน้ำ', qty: 1, price: 1590 }],
+    shippingService: 'EMS',
+    orderStatus: 'SHIPPED',
+    trackingNumber: 'EN100200321TH',
+    shippedAt: hoursAgo(50),
+    caseId: 'TP-2026-0025'
+  },
+  {
     orderId: 'MO-240909',
     shopId: 'SHOP-03',
     createdAt: hoursAgo(30),

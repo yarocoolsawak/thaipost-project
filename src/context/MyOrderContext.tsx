@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { CaseItem, EmailPayload, IssueCategory, UrgencyLevel } from '../types/case';
 import { INITIAL_MYORDER_ORDERS, MYORDER_SHOPS, isShippedOrder } from '../data/myOrders';
 import type { MyOrder, MyOrderShop } from '../data/myOrders';
 import { useCases } from './CaseContext';
+import { KNOWN_PARCELS } from '../services/trackTraceApi';
+import { autoSlaEligible } from '../utils/caseLifecycle';
 import type { MyOrderCaseFilter } from '../components/myorder/caseFilters';
 
 export interface ReportIssueParams {
@@ -73,9 +75,30 @@ interface MyOrderContextType {
 const MyOrderContext = createContext<MyOrderContextType | undefined>(undefined);
 
 export const MyOrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { role, dateScopedCases: cases, createCase, checkDuplicate, linkToExistingCase, sendOfficialEmail } = useCases();
+  const { role, cases, createCase, checkDuplicate, linkToExistingCase, sendOfficialEmail } = useCases();
   const [orders, setOrders] = useState<MyOrder[]>(INITIAL_MYORDER_ORDERS);
   const [selectedShopId, setSelectedShopId] = useState<string>(MYORDER_SHOPS[0].id);
+
+  const autoInputs = useRef({ orders, createCase });
+  useEffect(() => { autoInputs.current = { orders, createCase }; }, [orders, createCase]);
+  useEffect(() => {
+    let active = true;
+    const check = async () => {
+      for (const order of autoInputs.current.orders) {
+        if (!active || !order.trackingNumber || order.orderStatus !== 'SHIPPED') continue;
+        const parcel = KNOWN_PARCELS[order.trackingNumber];
+        if (!parcel || !autoSlaEligible(parcel, new Date().toISOString())) continue;
+        const shop = MYORDER_SHOPS.find(s => s.id === order.shopId);
+        if (!shop) continue;
+        await autoInputs.current.createCase({ trackingNumber: order.trackingNumber, contactPerson: shop.ownerName,
+          myOrderRef: { orderId: order.orderId, shopId: shop.id, shopName: shop.name },
+          category: 'DELAYED_DELIVERY', urgency: 'HIGH', customerInquiry: 'ระบบพบพัสดุถึงสาขาปลายทางเกิน 3 วัน ยังนำจ่ายไม่สำเร็จ', creationSource: 'AUTO_SLA' });
+      }
+    };
+    void check();
+    const timer = setInterval(() => { void check(); }, 3600000);
+    return () => { active = false; clearInterval(timer); };
+  }, []);
 
   const [caseFilter, setCaseFilter] = useState<MyOrderCaseFilter>('ALL');
   const [adminShopFilter, setAdminShopFilter] = useState('ALL');
@@ -99,9 +122,9 @@ export const MyOrderProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const shop = MYORDER_SHOPS.find(s => s.id === order.shopId) || currentShop;
 
     // Same parcel already has an open case -> attach to it instead of opening a duplicate
-    const existing = checkDuplicate(order.trackingNumber);
+    const existing = checkDuplicate(order.trackingNumber, { orderId: order.orderId, shopId: shop.id, shopName: shop.name });
     let caseItem: CaseItem;
-    if (existing && !params.forceNewCase) {
+    if (existing) {
       linkToExistingCase(existing.id, params.description, `${params.reporterName} (${shop.name} via MyOrder)`);
       if (params.emailDispatch) {
         sendOfficialEmail(existing.id, { ...params.emailDispatch, senderName: params.reporterName });
@@ -117,12 +140,12 @@ export const MyOrderProvider: React.FC<{ children: React.ReactNode }> = ({ child
         urgency: params.urgency,
         customerInquiry: params.description,
         emailDispatch: params.emailDispatch,
-        duplicateOfCaseId: existing?.id
+        duplicateOfCaseId: undefined
       });
     }
 
     setOrders(prev => prev.map(o => (o.orderId === orderId ? { ...o, caseId: caseItem.id } : o)));
-    return { caseItem, linkedToExisting: !!existing && !params.forceNewCase, emailSent: !!params.emailDispatch };
+    return { caseItem, linkedToExisting: !!existing, emailSent: !!params.emailDispatch };
   };
 
   // Match pasted tracking numbers against MyOrder orders and open cases
@@ -132,7 +155,7 @@ export const MyOrderProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (!order) return { trackingNumber, status: 'NOT_FOUND' };
       const shop = MYORDER_SHOPS.find(s => s.id === order.shopId);
       if (!isShippedOrder(order)) return { trackingNumber, status: 'NOT_SHIPPED', order, shop };
-      const existingCase = checkDuplicate(trackingNumber);
+      const existingCase = checkDuplicate(trackingNumber, { orderId: order.orderId, shopId: order.shopId, shopName: shop?.name || '' });
       return existingCase
         ? { trackingNumber, status: 'EXISTING_CASE', order, shop, existingCase }
         : { trackingNumber, status: 'NEW_CASE', order, shop };
@@ -142,7 +165,7 @@ export const MyOrderProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const submitBulkReport = async (
     lines: BulkLinePreview[],
     params: BulkReportParams,
-    newCaseFor: Set<string> = new Set()
+    _newCaseFor: Set<string> = new Set()
   ): Promise<BulkLineResult[]> => {
     const results = await Promise.all(
       lines.map(async (line): Promise<BulkLineResult> => {
@@ -161,7 +184,7 @@ export const MyOrderProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const email = params.emailTemplate
           ? { ...params.emailTemplate, subject: fill(params.emailTemplate.subject), body: fill(params.emailTemplate.body) }
           : undefined;
-        if (line.status === 'EXISTING_CASE' && line.existingCase && !newCaseFor.has(line.trackingNumber)) {
+        if (line.status === 'EXISTING_CASE' && line.existingCase) {
           linkToExistingCase(line.existingCase.id, params.description, `${params.adminName} (Bulk)`, 'MYORDER_ADMIN');
           if (email) sendOfficialEmail(line.existingCase.id, { ...email, senderName: params.adminName, sentByRole: 'MYORDER_ADMIN' });
           return { trackingNumber: line.trackingNumber, outcome: 'LINKED', caseItem: line.existingCase, shop: line.shop, emailSent: !!email };

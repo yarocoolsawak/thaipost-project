@@ -577,11 +577,6 @@ button, input, select, textarea {
   border: 1px solid #BFDBFE;
 }
 
-.status-badge.PENDING_CEC_ASSIGNMENT {
-  background: #FFF7ED;
-  color: #C2410C;
-  border: 1px dashed #FDBA74;
-}
 
 .status-badge.CENTRAL_REVIEWING {
   background: #F5F3FF;
@@ -1578,3 +1573,36 @@ button, input, select, textarea {
 .pod-thumb:hover img {
   border-color: #0284C7;
 }
+
+/* QMS shows the parcel outside the case's CEC area */
+.routing-alert-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: fit-content;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #C2410C;
+  background: #FFF7ED;
+  border: 1px solid #FB923C;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.routing-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  font-size: 0.84rem;
+  color: #9A3412;
+  background: #FFF7ED;
+  border: 1px solid #FB923C;
+  border-radius: 8px;
+  padding: 0.55rem 0.8rem;
+  margin-bottom: 0.5rem;
+}
+.routing-alert-banner span { flex: 1 1 260px; min-width: 0; }
+.routing-alert-banner .btn-secondary { padding: 0.3rem 0.7rem; font-size: 0.8rem; }

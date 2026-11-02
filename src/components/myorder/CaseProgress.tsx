@@ -5,7 +5,6 @@ import { Check } from 'lucide-react';
 // Status wording shown to shops (no internal ThaiPost jargon)
 export const MERCHANT_STATUS_META: Record<CaseStatus, { label: string; bg: string; color: string; border: string }> = {
   NEW: { label: 'รับเรื่องแล้ว', bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' },
-  PENDING_CEC_ASSIGNMENT: { label: 'รอระบุหน่วยงานรับผิดชอบ', bg: '#FFF7ED', color: '#C2410C', border: '#FDBA74' },
   CENTRAL_REVIEWING: { label: 'ปณ.ส่วนกลางกำลังตรวจสอบ', bg: '#F5F3FF', color: '#6D28D9', border: '#DDD6FE' },
   SENT_TO_CEC: { label: 'CEC กำลังตรวจสอบ', bg: '#FFFBEB', color: '#B45309', border: '#FDE68A' },
   WAITING_CEC_REPLY: { label: 'CEC กำลังตรวจสอบ', bg: '#FFFBEB', color: '#B45309', border: '#FDE68A' },
@@ -44,7 +43,7 @@ export const CaseProgressStepper: React.FC<{ caseItem: CaseItem }> = ({ caseItem
     { label: 'แจ้งปัญหา', sub: 'ส่งเข้าระบบ ปณ.', state: 'done' },
     {
       label: cecKnown ? 'ส่งถึง CEC' : 'รอระบุ CEC',
-      sub: cecKnown ? `CEC ${c.assignedCecId}` : 'รอสถานะพัสดุ',
+      sub: cecKnown ? `CEC ${c.assignedCecId}` : 'ส่วนกลางกำลังตรวจ',
       state: cecKnown ? 'done' : 'waiting'
     },
     {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useCases } from '../../context/CaseContext';
+import { useCases, ROUTING_ALERT_FILTER } from '../../context/CaseContext';
 import type { CaseItem } from '../../types/case';
 import { SlaBadge } from '../common/SlaBadge';
 import { CaseDetailModal, type DetailTab } from '../common/CaseDetailModal';
@@ -14,7 +14,8 @@ import { DateRangeFilter } from '../common/DateRangeFilter';
 import { SearchBox } from '../common/SearchBox';
 import { rowOpenProps } from '../../utils/rowOpen';
 import type { IssueCategory } from '../../types/case';
-import { Building2, CheckCircle2, PhoneForwarded, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { Building2, CheckCircle2, PhoneForwarded, FileSpreadsheet, RefreshCw, MapPinX } from 'lucide-react';
+import { notify } from '../../utils/dialog';
 import { SortTh, useCaseSort } from '../common/CaseSort';
 
 export const CentralQueue: React.FC = () => {
@@ -23,7 +24,9 @@ export const CentralQueue: React.FC = () => {
     statusFilter,
     categoryFilter,
     setCategoryFilter,
-    syncParcelTracking
+    setStatusFilter,
+    syncParcelTracking,
+    counts
   } = useCases();
 
   // Modals state
@@ -46,19 +49,22 @@ export const CentralQueue: React.FC = () => {
     return true;
   });
 
-  const blankCecCases = filteredCases.filter(c => c.assignedCecId === undefined && c.status !== 'CLOSED');
+  const openCases = displayCases.filter(c => c.status !== 'CLOSED');
 
+  // Pull new QMS statuses; each one is checked against the case's CEC
   const runSync = async (ids: string[]) => {
     setSyncingIds(ids);
     const results = await Promise.all(ids.map(id => syncParcelTracking(id)));
     setSyncingIds([]);
-    const assigned = results.filter(r => r === 'CEC_ASSIGNED').length;
+    const alerts = results.filter(r => r === 'ROUTING_ALERT').length;
     const updated = results.filter(r => r !== 'NO_CHANGE').length;
-    setSyncNotice(
-      updated === 0
-        ? 'QMS ยังไม่มีสถานะพัสดุใหม่ — CEC ยังระบุไม่ได้'
-        : `QMS อัปเดตสถานะพัสดุ ${updated} เคส${assigned ? ` • ระบุ CEC อัตโนมัติ ${assigned} เคส` : ''}`
-    );
+    setSyncNotice(updated === 0 ? 'QMS ยังไม่มีสถานะพัสดุใหม่' : `QMS อัปเดตสถานะพัสดุ ${updated} เคส`);
+    if (alerts > 0) {
+      notify(`สถานะพัสดุจาก QMS แสดงว่า ${alerts} เคสไปอยู่พื้นที่ของ CEC อื่น หรือสาขาแจ้งผิดเขต กรุณาตรวจและย้าย CEC`, {
+        title: 'ปลายทางไม่ตรง CEC',
+        tone: 'danger'
+      });
+    }
   };
 
   return (
@@ -87,21 +93,33 @@ export const CentralQueue: React.FC = () => {
               <span>Export Excel</span>
             </button>
 
-            {blankCecCases.length > 0 && (
+            {openCases.length > 0 && (
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={() => runSync(blankCecCases.map(c => c.id))}
+                onClick={() => runSync(openCases.map(c => c.id))}
                 disabled={syncingIds.length > 0}
-                style={{ fontWeight: 600, borderColor: '#FDBA74', color: '#C2410C', background: '#FFF7ED' }}
-                title="ดึงสถานะพัสดุล่าสุดจาก QMS — CEC จะถูกระบุอัตโนมัติเมื่อ QMS ยืนยันพื้นที่ปลายทาง"
+                style={{ fontWeight: 600 }}
+                title="ดึงสถานะพัสดุล่าสุดจาก QMS และตรวจว่าพัสดุอยู่ในพื้นที่ของ CEC ที่ส่งเคสไปหรือไม่"
               >
-                <RefreshCw size={15} /> {syncingIds.length > 0 ? 'กำลังดึงข้อมูล...' : `ดึงสถานะจาก QMS (${blankCecCases.length})`}
+                <RefreshCw size={15} /> {syncingIds.length > 0 ? 'กำลังดึงข้อมูล...' : `ดึงสถานะจาก QMS (${openCases.length})`}
               </button>
             )}
 
           </div>
         </div>
+
+        {counts.routingAlerts > 0 && statusFilter !== ROUTING_ALERT_FILTER && (
+          <div className="routing-alert-banner" role="alert">
+            <MapPinX size={16} />
+            <span>
+              <strong>{counts.routingAlerts} เคส</strong> สถานะพัสดุจาก QMS ไม่ตรงกับ CEC ที่ส่งเคสไป (พัสดุไปอยู่พื้นที่ CEC อื่น หรือสาขาแจ้งผิดเขต)
+            </span>
+            <button type="button" className="btn-secondary" onClick={() => setStatusFilter(ROUTING_ALERT_FILTER)}>
+              ดูเคส
+            </button>
+          </div>
+        )}
 
         {syncNotice && (
           <div
@@ -157,7 +175,9 @@ export const CentralQueue: React.FC = () => {
           </select>
           <DateRangeFilter idPrefix="central-date" />
           <span className="list-count">
-            {statusFilter !== 'ALL' && <strong>{getCaseStatusLabel(statusFilter)} • </strong>}
+            {statusFilter !== 'ALL' && (
+              <strong>{statusFilter === ROUTING_ALERT_FILTER ? 'ปลายทางไม่ตรง CEC' : getCaseStatusLabel(statusFilter)} • </strong>
+            )}
             {displayCases.length} เคส
           </span>
         </div>
@@ -253,17 +273,16 @@ export const CentralQueue: React.FC = () => {
                           </button>
                         )}
 
-                        {/* CEC still blank: it can only be filled from QMS parcel status, never by hand */}
-                        {item.assignedCecId === undefined && item.status !== 'CLOSED' && (
+                        {/* QMS shows the parcel outside this CEC's area: central moves the case or keeps the CEC */}
+                        {item.routingAlert && item.status !== 'CLOSED' && (
                           <button
                             type="button"
                             className="btn-secondary"
-                            style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
-                            onClick={() => runSync([item.id])}
-                            disabled={syncingIds.includes(item.id)}
-                            title="ดึงสถานะพัสดุล่าสุดจาก QMS (CEC ถูกระบุอัตโนมัติเมื่อ QMS ยืนยันพื้นที่ปลายทาง)"
+                            style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem', borderColor: '#FB923C', color: '#C2410C' }}
+                            onClick={() => { setDetailTab('OVERVIEW'); setSelectedCaseForDetail(item); }}
+                            title={item.routingAlert.message}
                           >
-                            <RefreshCw size={13} /> QMS
+                            <MapPinX size={13} /> ตรวจ CEC
                           </button>
                         )}
 

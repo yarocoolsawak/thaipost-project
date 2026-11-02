@@ -2,6 +2,9 @@ import type { CaseItem } from '../types/case';
 import { KNOWN_PARCELS, POD_SAMPLE_IMAGE, withDeliveryStaff } from '../services/trackTraceApi';
 
 import { hoursAgo, hoursAhead } from './demoClock';
+import { cecForRecipient, detectRoutingAlert } from '../utils/cecRouting';
+import { findPostOffice } from './postOffices';
+import { defaultClosureSettings, sendResolution, shipmentKey } from '../utils/caseLifecycle';
 
 // Every case is raised by a MyOrder shop from a shipped order (see src/data/myOrders.ts)
 const SEED_CASES: CaseItem[] = [
@@ -952,7 +955,7 @@ const SEED_CASES: CaseItem[] = [
 
   // ---------- More recent reports ----------
 
-  // 8. MyOrder: parcel still in transit -> CEC cannot be determined yet (blank)
+  // 8. MyOrder: parcel still in transit -> CEC 10 from the recipient's postal code (34000)
   {
     id: 'TP-2026-0008',
     trackingNumber: 'EN100200302TH',
@@ -962,11 +965,12 @@ const SEED_CASES: CaseItem[] = [
     category: 'DELAYED_DELIVERY',
     urgency: 'NORMAL',
     customerInquiry: 'ส่ง EMS ไปอุบลฯ ตั้งแต่ 5 วันก่อน สถานะค้างอยู่ที่ศูนย์คัดแยกนครราชสีมา ลูกค้าถามทุกวันค่ะ',
-    status: 'PENDING_CEC_ASSIGNMENT',
-    assignedCecId: undefined,
-    assignedCecName: undefined,
+    status: 'WAITING_CEC_REPLY',
+    assignedCecId: 10,
+    assignedCecName: 'CEC 10 (ภาคอีสานตอนล่าง 2)',
     assignedBranchName: 'ปณ.เมืองอุบลราชธานี (34000)',
     createdAt: hoursAgo(6),
+    dispatchedAt: hoursAgo(6),
     slaRouteType: 'CROSS_PROVINCE',
     slaTargetDays: 5,
     slaDeadline: hoursAhead(66),
@@ -988,8 +992,8 @@ const SEED_CASES: CaseItem[] = [
         timestamp: hoursAgo(6),
         actorName: 'ระบบ (Auto-Routing)',
         actorRole: 'CENTRAL',
-        action: 'รอระบุ CEC ผู้รับผิดชอบ',
-        details: 'พัสดุยังอยู่ระหว่างขนส่ง ยังไม่ยืนยันพื้นที่ปลายทาง ระบบจะระบุ CEC อัตโนมัติเมื่อสถานะพัสดุอัปเดต'
+        action: 'ส่งเคสตรงถึง CEC อัตโนมัติ',
+        details: 'ระบุ CEC-10 จากรหัสไปรษณีย์ผู้รับ 34000 และส่งเข้าคิว CEC ทันที'
       },
       {
         id: 'log-8-1',
@@ -1419,7 +1423,7 @@ const SEED_CASES: CaseItem[] = [
     parcelInfo: KNOWN_PARCELS['EN100200313TH']
   },
 
-  // 14. EXPEDITE_REQUEST + PENDING_CEC_ASSIGNMENT (อยู่ระหว่างขนส่ง ยังไม่ถึงศูนย์ปลายทาง)
+  // 14. EXPEDITE_REQUEST in transit -> CEC 7 from the recipient's postal code (41000)
   {
     id: 'TP-2026-0014',
     trackingNumber: 'EN100200314TH',
@@ -1429,11 +1433,12 @@ const SEED_CASES: CaseItem[] = [
     category: 'EXPEDITE_REQUEST',
     urgency: 'NORMAL',
     customerInquiry: 'เครื่องสำอางชุดแต่งหน้าเจ้าสาว ลูกค้าต้องใช้วันพรุ่งนี้เช้าที่อุดรธานี รบกวนเร่งตรวจสอบเส้นทางส่งต่อให้ด้วยค่ะ',
-    status: 'PENDING_CEC_ASSIGNMENT',
-    assignedCecId: undefined,
-    assignedCecName: undefined,
+    status: 'WAITING_CEC_REPLY',
+    assignedCecId: 7,
+    assignedCecName: 'CEC 7 (ภาคอีสานตอนบน 1)',
     assignedBranchName: 'ปณ.เมืองอุดรธานี (41000)',
     createdAt: hoursAgo(8),
+    dispatchedAt: hoursAgo(8),
     slaRouteType: 'CROSS_PROVINCE',
     slaTargetDays: 5,
     slaDeadline: hoursAhead(112),
@@ -1455,8 +1460,8 @@ const SEED_CASES: CaseItem[] = [
         timestamp: hoursAgo(8),
         actorName: 'ระบบ (Auto-Routing)',
         actorRole: 'CENTRAL',
-        action: 'รอระบุ CEC ผู้รับผิดชอบ',
-        details: 'พัสดุยังอยู่ระหว่างขนส่งหลัก ระบบจะระบุ CEC อัตโนมัติเมื่อ QMS อัปเดตถึงศูนย์คัดแยกปลายทาง'
+        action: 'ส่งเคสตรงถึง CEC อัตโนมัติ',
+        details: 'ระบุ CEC-07 จากรหัสไปรษณีย์ผู้รับ 41000 และส่งเข้าคิว CEC ทันที'
       },
       {
         id: 'log-14-1',
@@ -1468,6 +1473,67 @@ const SEED_CASES: CaseItem[] = [
       }
     ],
     parcelInfo: KNOWN_PARCELS['EN100200314TH']
+  },
+
+  // 25. Postal code typo: the shop typed 38000 (Bueng Kan) for an address in Nakhon Ratchasima (30000).
+  //     The case went to CEC 7 by the postal code; QMS then shows ผิดเขต (code 40) and later the Korat office.
+  {
+    id: 'TP-2026-0025',
+    trackingNumber: 'EN100200321TH',
+    companyName: 'Gadget Corner BKK',
+    contactPerson: 'คุณต้น ภาณุ',
+    myOrderRef: { orderId: 'MO-240921', shopId: 'SHOP-03', shopName: 'Gadget Corner BKK' },
+    category: 'DELAYED_DELIVERY',
+    urgency: 'HIGH',
+    customerInquiry: 'ลูกค้าที่โคราชแจ้งว่ายังไม่ได้รับของ สถานะขึ้นผิดเขตที่ ปณ.บึงกาฬ รบกวนตรวจสอบและส่งต่อให้ด้วยครับ',
+    status: 'WAITING_CEC_REPLY',
+    assignedCecId: 7,
+    assignedCecName: 'CEC 7 (ภาคอีสานตอนบน 1)',
+    assignedBranchName: 'ปณ.บึงกาฬ (38000)',
+    createdAt: hoursAgo(3),
+    dispatchedAt: hoursAgo(3),
+    slaRouteType: 'CROSS_PROVINCE',
+    slaTargetDays: 5,
+    slaDeadline: hoursAhead(94),
+    isSlaExceeded: false,
+    callAttempts: [],
+    branchContactLogs: [],
+    chatHistory: [
+      {
+        id: 'msg-25-1',
+        senderRole: 'CUSTOMER',
+        senderName: 'คุณต้น ภาณุ (Gadget Corner BKK)',
+        message: 'ลูกค้าที่โคราชแจ้งว่ายังไม่ได้รับของ สถานะขึ้นผิดเขตที่ ปณ.บึงกาฬ รบกวนตรวจสอบและส่งต่อให้ด้วยครับ',
+        timestamp: hoursAgo(3)
+      }
+    ],
+    activityLogs: [
+      {
+        id: 'log-25-3',
+        timestamp: hoursAgo(3),
+        actorName: 'ระบบ (ตรวจปลายทางจาก QMS)',
+        actorRole: 'CENTRAL',
+        action: 'แจ้งเตือน: สาขาแจ้งผิดเขต / ที่อยู่ผิด',
+        details: 'ปณ.บึงกาฬ แจ้งสถานะ "ผิดเขต" (รหัส 40) ที่อยู่หรือรหัสไปรษณีย์ผู้รับ 38000 อาจพิมพ์ผิด'
+      },
+      {
+        id: 'log-25-2',
+        timestamp: hoursAgo(3),
+        actorName: 'ระบบ (Auto-Routing)',
+        actorRole: 'CENTRAL',
+        action: 'ส่งเคสตรงถึง CEC อัตโนมัติ',
+        details: 'ระบุ CEC-07 จากรหัสไปรษณีย์ผู้รับ 38000 และส่งเข้าคิว CEC ทันที'
+      },
+      {
+        id: 'log-25-1',
+        timestamp: hoursAgo(3),
+        actorName: 'คุณต้น ภาณุ (MyOrder)',
+        actorRole: 'MERCHANT',
+        action: 'ร้านค้าแจ้งปัญหาผ่าน MyOrder',
+        details: 'แจ้งปัญหาจากคำสั่งซื้อ MO-240921 (EN100200321TH) ส่งตรงเข้าระบบ ปณ.'
+      }
+    ],
+    parcelInfo: KNOWN_PARCELS['EN100200321TH']
   },
 
   // 15. REDELIVERY_REQUEST + WAITING_CEC_REPLY (นัดหมายนำจ่ายใหม่รอบบ่าย)
@@ -2609,4 +2675,22 @@ const SEED_CASES: CaseItem[] = [
 ];
 
 // Parcels that are already out for delivery carry their delivery officer, as QMS would report it
-export const INITIAL_CASES: CaseItem[] = SEED_CASES.map(c => ({ ...c, parcelInfo: withDeliveryStaff(c.parcelInfo) }));
+// Seed cases get the same QMS destination check new cases get
+export const INITIAL_CASES: CaseItem[] = SEED_CASES.map(c => {
+  const parcelInfo = withDeliveryStaff(c.parcelInfo);
+  const office = findPostOffice(parcelInfo.destZipCode);
+  const cec = cecForRecipient(parcelInfo);
+  const routingAlert = c.status === 'CLOSED' ? undefined : detectRoutingAlert(parcelInfo, cec?.id, c.createdAt);
+  const normalized: CaseItem = {
+    ...c, parcelInfo, routingAlert,
+    creationSource: 'MERCHANT', shipmentId: shipmentKey(c.myOrderRef, c.trackingNumber), parcelCycleVerified: true,
+    deliveryDisputed: c.category === 'NOT_RECEIVED', merchantEngaged: true,
+    assignedCecId: cec?.id,
+    assignedCecName: cec?.name,
+    assignedBranchCode: office?.code,
+    assignedBranchName: office ? `ปณ.${office.name}` : undefined
+  };
+  return c.status === 'ANSWER_SENT_TO_MERCHANT' && c.centralReview
+    ? sendResolution(normalized, defaultClosureSettings(), c.centralReview.reviewedAt)
+    : normalized;
+});

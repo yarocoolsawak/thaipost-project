@@ -67,7 +67,7 @@ export async function exportCasesToExcel(cases: CaseItem[], filenamePrefix = 'Th
       c.contactPerson,
       c.myOrderRef.orderId,
       c.assignedBranchName || c.parcelInfo.destPostOffice,
-      c.assignedCecName || 'รอระบุ CEC',
+      c.assignedCecName || 'ยังไม่ระบุ CEC',
       categoryTh,
       (c.customerInquiry || '-').replace(/"/g, '""'),
       c.urgency,

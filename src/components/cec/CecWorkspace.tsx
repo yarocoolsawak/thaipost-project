@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useCases } from '../../context/CaseContext';
 import type { CaseItem } from '../../types/case';
 import { CEC_REGIONS } from '../../data/cecRegions';
+import { POST_OFFICE_SOURCE } from '../../data/postOffices';
 import { SlaBadge } from '../common/SlaBadge';
 import { CaseDetailModal, type DetailTab } from '../common/CaseDetailModal';
 import { IssueDisplay, UrgencyBadge } from '../common/IssueBadge';
@@ -70,8 +71,8 @@ export const CecWorkspace: React.FC = () => {
         </div>
 
         <div style={{ fontSize: '0.82rem', color: 'var(--thp-muted)' }}>
-          พื้นที่รับผิดชอบ: <strong style={{ color: 'var(--thp-slate)' }}>{currentCec.regionName}</strong> • สมาชิกกลุ่ม LINE{' '}
-          <strong style={{ color: 'var(--thp-slate)' }}>{currentCec.memberCount} คน</strong> • เปลี่ยนกลุ่ม CEC ได้ที่แถบด้านบน
+          พื้นที่รับผิดชอบ: <strong style={{ color: 'var(--thp-slate)' }}>{currentCec.regionName}</strong> • ที่ทำการในตาราง{' '}
+          <strong style={{ color: 'var(--thp-slate)' }}>{currentCec.officeCount} แห่ง</strong> • ข้อมูล ณ {POST_OFFICE_SOURCE.asOfLabel} • เปลี่ยนกลุ่ม CEC ได้ที่แถบด้านบน
         </div>
 
         <div className="list-toolbar" style={{ paddingTop: '0.75rem', borderTop: '1px solid #F1F5F9' }}>

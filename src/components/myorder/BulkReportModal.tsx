@@ -5,7 +5,7 @@ import { useMyOrder } from '../../context/MyOrderContext';
 import { BULK_EMAIL_TOKENS, type BulkLinePreview, type BulkLineResult } from '../../context/MyOrderContext';
 import { parseTrackingList } from '../../utils/trackingParser';
 import { KNOWN_PARCELS } from '../../services/trackTraceApi';
-import { resolveCecFromParcel } from '../../data/cecRegions';
+import { cecForRecipient } from '../../utils/cecRouting';
 import { ISSUE_CATEGORY_META } from '../common/IssueBadge';
 import { buildEmailDraft, DEFAULT_REQUEST_EMAIL_TO, EMAIL_REQUEST_TYPE_LABEL, EMAIL_RULES } from '../../utils/emailTemplates';
 import { RequestEmailEditor, type EmailDraft } from './RequestEmailEditor';
@@ -56,8 +56,6 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [results, setResults] = useState<BulkLineResult[] | null>(null);
   const [viewCase, setViewCase] = useState<CaseItem | null>(null);
-  // Parcels with an open case: default is to follow the existing case; admin can switch each one to "create new"
-  const [newCaseFor, setNewCaseFor] = useState<string[]>([]);
 
   // Official email per parcel: required for some problem types (e.g. แจ้งตีกลับ), optional for others
   const bulkDraft = (type: EmailRequestType, signature: string): EmailDraft => ({
@@ -81,11 +79,8 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
   const lines = previewBulkReport(parsed.valid);
   const actionable = lines.filter(l => l.status === 'NEW_CASE' || l.status === 'EXISTING_CASE');
   const duplicateLines = lines.filter(l => l.status === 'EXISTING_CASE');
-  const wantsNew = (l: BulkLinePreview) => newCaseFor.includes(l.trackingNumber);
-  const newCount = lines.filter(l => l.status === 'NEW_CASE').length + duplicateLines.filter(wantsNew).length;
-  const followCount = duplicateLines.length - duplicateLines.filter(wantsNew).length;
-  const setDecision = (trackingNumber: string, createNew: boolean) =>
-    setNewCaseFor(prev => (createNew ? [...new Set([...prev, trackingNumber])] : prev.filter(t => t !== trackingNumber)));
+  const newCount = lines.filter(l => l.status === 'NEW_CASE').length;
+  const followCount = duplicateLines.length;
 
   const handleCategoryChange = (next: IssueCategory) => {
     // Swap the default message only if the admin has not typed their own
@@ -111,19 +106,19 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
       emailTemplate: emailOn
         ? { ...emailDraft, to: emailDraft.to || DEFAULT_REQUEST_EMAIL_TO, subject: emailDraft.subject.trim(), body: emailDraft.body.trim() }
         : undefined
-    }, new Set(newCaseFor));
+    });
     setIsSubmitting(false);
     setResults(res);
   };
 
   const cecPreview = (line: BulkLinePreview) => {
-    if (line.status === 'EXISTING_CASE' && !wantsNew(line)) {
-      return line.existingCase?.assignedCecId ? `CEC ${line.existingCase.assignedCecId}` : 'รอระบุ CEC';
+    if (line.status === 'EXISTING_CASE') {
+      return line.existingCase?.assignedCecId ? `CEC ${line.existingCase.assignedCecId}` : 'ส่วนกลางระบุ';
     }
-    if (line.status !== 'NEW_CASE' && line.status !== 'EXISTING_CASE') return '-';
+    if (line.status !== 'NEW_CASE') return '-';
     const parcel = KNOWN_PARCELS[line.trackingNumber];
-    const cec = parcel ? resolveCecFromParcel(parcel) : undefined;
-    return cec ? cec.code : 'รอระบุ CEC';
+    const cec = parcel ? cecForRecipient(parcel) : undefined;
+    return cec ? cec.code : 'ส่วนกลางระบุ';
   };
 
   return (
@@ -189,7 +184,7 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
                                   </div>
                                 )}
                                 <strong>{r.caseItem.id}</strong> •{' '}
-                                {r.caseItem.assignedCecId ? `CEC ${r.caseItem.assignedCecId}` : <span className="cec-blank-chip">รอระบุ CEC</span>}
+                                {r.caseItem.assignedCecId ? `CEC ${r.caseItem.assignedCecId}` : <span className="cec-blank-chip">ส่วนกลางระบุ</span>}
                                 {r.caseItem.duplicateOfCaseId && (
                                   <div style={{ fontSize: '0.7rem', color: '#92400E' }}>เคสใหม่ แยกจาก {r.caseItem.duplicateOfCaseId}</div>
                                 )}
@@ -218,7 +213,7 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
               </div>
             </div>
             <div className="modal-footer">
-              <button type="button" className="btn-secondary" onClick={() => { setResults(null); setRawInput(''); setNewCaseFor([]); }}>
+              <button type="button" className="btn-secondary" onClick={() => { setResults(null); setRawInput(''); }}>
                 แจ้งชุดใหม่
               </button>
               <button type="button" className="btn-myorder" onClick={onClose}>
@@ -303,21 +298,8 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
                   <div className="duplicate-alert-banner" style={{ padding: '0.65rem 0.85rem' }}>
                     <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 2, color: '#D97706' }} />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.8rem' }}>
-                      <strong>พบ {duplicateLines.length} เลขพัสดุที่เคยสร้างเคสแล้วและเคสยังไม่ปิด</strong>
-                      <span>เลือกในแต่ละแถวว่าจะติดตามเคสเดิม (แนบข้อความเข้าเคสเดิม) หรือสร้างเคสใหม่</span>
-                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                        <button type="button" className="btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setNewCaseFor([])}>
-                          ติดตามเคสเดิมทั้งหมด
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
-                          onClick={() => setNewCaseFor(duplicateLines.map(l => l.trackingNumber))}
-                        >
-                          สร้างเคสใหม่ทั้งหมด
-                        </button>
-                      </div>
+                      <strong>พบ {duplicateLines.length} เลขพัสดุที่เคยสร้างเคสแล้ว รวมเคสที่ปิดแล้ว</strong>
+                      <span>แนบข้อความเข้าเคสเดิมและให้เจ้าหน้าที่ดำเนินการต่อ โดยไม่สร้างเคสซ้ำ</span>
                     </div>
                   </div>
                 )}
@@ -362,22 +344,9 @@ export const BulkReportModal: React.FC<BulkReportModalProps> = ({ onClose }) => 
                                       >
                                         ดูเคส {line.existingCase.id}
                                       </button>
-                                      <div className="dup-toggle">
-                                        <button
-                                          type="button"
-                                          className={!wantsNew(line) ? 'active' : ''}
-                                          onClick={() => setDecision(line.trackingNumber, false)}
-                                        >
-                                          ติดตามเคสเดิม
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className={wantsNew(line) ? 'active' : ''}
-                                          onClick={() => setDecision(line.trackingNumber, true)}
-                                        >
-                                          สร้างใหม่
-                                        </button>
-                                      </div>
+                                      <span style={{ fontSize: '0.7rem', color: 'var(--thp-muted)' }}>
+                                        ติดตามในเคสเดิม รวมเคสที่ปิดแล้ว
+                                      </span>
                                     </div>
                                   )}
                                 </td>

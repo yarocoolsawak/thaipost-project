@@ -229,7 +229,7 @@ export const EmailDispatchModal: React.FC<EmailDispatchModalProps> = ({ caseItem
                   type="text"
                   className="form-control"
                   style={{ fontSize: '0.8rem', padding: '0.35rem 0.6rem', flex: 1, minWidth: 0 }}
-                  placeholder="พิมพ์ชื่อไฟล์หรือเลือกหลักฐาน เช่น บัตรประชาชน.pdf"
+                  placeholder="พิมพ์ชื่อไฟล์หรือเลือกหลักฐาน เช่น ใบเสร็จรับฝาก.jpg (ไม่ต้องแนบบัตรประชาชน)"
                   value={newAttachmentName}
                   onChange={e => setNewAttachmentName(e.target.value)}
                 />

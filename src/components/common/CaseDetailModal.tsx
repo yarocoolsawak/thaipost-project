@@ -1,9 +1,11 @@
+import { CaseLifecyclePanel } from './CaseLifecyclePanel';
 import React, { useState } from 'react';
 import type { CaseItem } from '../../types/case';
 import { useCases } from '../../context/CaseContext';
 import { SlaBadge } from './SlaBadge';
 import { TrackingTimeline } from './TrackingTimeline';
 import { DuplicateChip, OrderRefChip } from './CecAssignment';
+import { RoutingAlertPanel } from './RoutingAlert';
 import { CloseCaseModal } from './CloseCaseModal';
 import { UrgencyBadge } from './IssueBadge';
 import { CEC_REGIONS } from '../../data/cecRegions';
@@ -187,9 +189,12 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
         {/* Modal Body */}
         <div className="modal-body">
+          <CaseLifecyclePanel caseItem={caseItem} />
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'OVERVIEW' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <RoutingAlertPanel caseItem={caseItem} />
+
               {/* Top Banner: CEC Answer Waiting Review if applicable */}
               {caseItem.status === 'WAITING_CENTRAL_REVIEW' && caseItem.cecReply && (
                 <div
@@ -362,6 +367,9 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                     <span style={{ color: 'var(--thp-muted)' }}>ปลายทาง:</span>
                     <strong style={{ color: '#B91C1C' }}>{caseItem.parcelInfo.destPostOffice}</strong>
 
+                    <span style={{ color: 'var(--thp-muted)' }}>สาขารับผิดชอบ:</span>
+                    <span>{caseItem.assignedBranchName || 'รอส่วนกลางระบุสาขา'}{caseItem.assignedBranchCode ? ` (${caseItem.assignedBranchCode})` : ''}</span>
+
                     <span style={{ color: 'var(--thp-muted)' }}>ผู้รับ:</span>
                     <span>{caseItem.parcelInfo.receiverName} ({caseItem.parcelInfo.receiverPhone})</span>
 
@@ -370,10 +378,10 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                       <span>
                         <span style={{ color: '#4338CA', fontWeight: 600 }}>{cec.name}</span>
                         <br />
-                        <a href={`tel:${cec.phone}`} className="tel-link">โทร {cec.phone}</a>
+                        {cec.phone ? <a href={`tel:${cec.phone}`} className="tel-link">โทร {cec.phone}</a> : <span style={{ color: 'var(--thp-muted)' }}>ตารางที่ทำการไม่มีข้อมูลเบอร์โทร CEC</span>}
                       </span>
                     ) : (
-                      <span style={{ color: '#94A3B8' }}>รอระบุ CEC (รอ QMS ยืนยันปลายทาง)</span>
+                      <span style={{ color: '#94A3B8' }}>ยังไม่ระบุ CEC (รหัสไปรษณีย์ไม่มีในตาราง)</span>
                     )}
 
                     <span style={{ color: 'var(--thp-muted)' }}>คนนำจ่าย:</span>
@@ -1048,7 +1056,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                   onClick={handleCloseCaseAction}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
                 >
-                  <ShieldCheck size={16} /> ตรวจเงื่อนไข & ปิดเคส
+                  <ShieldCheck size={16} /> ตรวจเงื่อนไขและส่งผลแก้ไข
                 </button>
               )}
             </>
@@ -1062,7 +1070,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
               onClick={handleCloseCaseAction}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
             >
-              <ShieldCheck size={16} /> ตรวจเงื่อนไข & ปิดเคส
+              <ShieldCheck size={16} /> ตรวจเงื่อนไขและส่งผลแก้ไข
             </button>
           )}
 

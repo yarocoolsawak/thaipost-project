@@ -22,7 +22,7 @@ interface CloseCaseModalProps {
 }
 
 export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClose, onSuccess }) => {
-  const { role, closeCase, addChatMessage } = useCases();
+  const { role, submitResolution, addChatMessage } = useCases();
 
   // 1. Central Postal Status Check (Official THP Code 501: Final delivery / นำจ่ายสำเร็จ)
   const postalStatus = caseItem.parcelInfo?.currentPostalStatus || '';
@@ -69,18 +69,18 @@ export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClos
       if (hasProofEvidence) {
         return {
           resolutionNotes: 'ตรวจสอบพบนำจ่ายแล้ว และมีภาพหลักฐานการจัดส่ง (POD) ยืนยัน',
-          reply: `ทางเจ้าหน้าที่ได้ตรวจสอบการจัดส่งเรียบร้อยแล้ว มีภาพถ่ายหลักฐานการนำส่ง (Proof of Delivery - POD) ยืนยันผู้รับได้รับสินค้าสมบูรณ์ จึงขอตอบกลับและดำเนินการปิดเคสเรียบร้อยครับ`
+          reply: `ทางเจ้าหน้าที่ได้ตรวจสอบการจัดส่งเรียบร้อยแล้ว มีภาพถ่ายหลักฐานการนำส่ง (Proof of Delivery - POD) ยืนยันผู้รับได้รับสินค้าสมบูรณ์ จึงขอตอบกลับและดำเนินการส่งผลแก้ไขเรียบร้อยครับ`
         };
       }
       return {
-        resolutionNotes: 'โทรคอนเฟิร์มผู้รับปลายทางยืนยันได้รับสินค้าจริง และดำเนินการปิดเคส',
-        reply: `ทางเจ้าหน้าที่ได้โทรประสานงานคอนเฟิร์มกับผู้รับปลายทางโดยตรง (${caseItem.parcelInfo?.receiverName || 'ผู้รับ'}) ยืนยันว่าได้รับพัสดุเรียบร้อยแล้ว จึงขอตอบกลับและดำเนินการปิดเคสเรียบร้อยครับ`
+        resolutionNotes: 'โทรคอนเฟิร์มผู้รับปลายทางยืนยันได้รับสินค้าจริง และดำเนินการส่งผลแก้ไข',
+        reply: `ทางเจ้าหน้าที่ได้โทรประสานงานคอนเฟิร์มกับผู้รับปลายทางโดยตรง (${caseItem.parcelInfo?.receiverName || 'ผู้รับ'}) ยืนยันว่าได้รับพัสดุเรียบร้อยแล้ว จึงขอตอบกลับและดำเนินการส่งผลแก้ไขเรียบร้อยครับ`
       };
     }
     if (caseItem.category === 'REDELIVERY_REQUEST') {
       return {
-        resolutionNotes: 'เจ้าหน้าที่นำจ่ายรอบใหม่และติดต่อผู้รับสำเร็จ ดำเนินการปิดเคส',
-        reply: `ทางเจ้าหน้าที่ได้ประสานงานนำจ่ายรอบใหม่ และติดต่อผู้รับปลายทางเพื่อจัดส่งสินค้าเรียบร้อยแล้ว จึงขอดำเนินการปิดเคสครับ`
+        resolutionNotes: 'เจ้าหน้าที่นำจ่ายรอบใหม่และติดต่อผู้รับสำเร็จ ดำเนินการส่งผลแก้ไข',
+        reply: `ทางเจ้าหน้าที่ได้ประสานงานนำจ่ายรอบใหม่ และติดต่อผู้รับปลายทางเพื่อจัดส่งสินค้าเรียบร้อยแล้ว จึงขอดำเนินการส่งผลแก้ไขครับ`
       };
     }
     if (caseItem.category === 'RETURN_OR_REVERSE') {
@@ -105,7 +105,7 @@ export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClos
   let validationMessage = '';
 
   if (caseItem.category === 'CLOSE_WORK_REQUEST') {
-    // แจ้งปิดงาน: ถ้าเช็คที่กลางมีสถานะรับพัสดุแล้ว ปิดเคสได้เลย
+    // แจ้งปิดงาน: ถ้าเช็คที่กลางมีสถานะรับพัสดุแล้ว ส่งผลแก้ไขได้เลย
     if (!isDeliveredInCentral) {
       canClose = false;
       validationMessage = 'สถานะระบบกลางยังไม่ขึ้น "รับพัสดุแล้ว" หรือ "นำจ่ายสำเร็จ" กรุณาประสานงานตรวจสอบก่อนปิดงาน';
@@ -114,7 +114,7 @@ export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClos
     // เร่งนำส่ง: ถ้าจัดส่งแล้วมีภาพหลักฐาน ปิดได้ทันที / ถ้าไม่มีภาพ ต้องโทรคอนเฟิร์มปลายทางว่าได้รับจริงหรือไม่
     if (!hasProofEvidence && !recipientConfirmed) {
       canClose = false;
-      validationMessage = 'ยังไม่มีภาพถ่ายหลักฐานการนำส่ง (POD) ต้องโทรคอนเฟิร์มกับปลายทางว่าได้รับจริงก่อนปิดเคส';
+      validationMessage = 'ยังไม่มีภาพถ่ายหลักฐานการนำส่ง (POD) ต้องโทรคอนเฟิร์มกับปลายทางว่าได้รับจริงก่อนส่งผลแก้ไข';
     }
   }
 
@@ -154,23 +154,12 @@ export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClos
 
   const handleExecuteClose = async () => {
     if (!canClose) {
-      notify(validationMessage, { title: 'ยังไม่ผ่านเงื่อนไขการปิดเคส', tone: 'danger' });
+      notify(validationMessage, { title: 'ยังไม่ผ่านเงื่อนไขการส่งผลแก้ไข', tone: 'danger' });
       return;
     }
 
     try {
       setIsSubmitting(true);
-
-      // Send the official reply message to the merchant/chat
-      if (replyMessage.trim()) {
-        const senderName =
-          role === 'CENTRAL'
-            ? 'ปณ.ส่วนกลาง (ปิดเคส)'
-            : role === 'MYORDER_ADMIN'
-            ? 'แอดมิน MyOrder'
-            : 'เจ้าหน้าที่ ปณ.';
-        addChatMessage(caseItem.id, replyMessage.trim(), role, senderName, false);
-      }
 
       // Close the case with resolution notes
       const fullNotes = `${resolutionNotes.trim()} [ตรวจสอบ: หมวด ${caseItem.category} | ระบบกลาง: ${
@@ -179,11 +168,12 @@ export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClos
         recipientConfirmed ? 'ยืนยันได้รับจริง' : 'ไม่ได้คอนเฟิร์ม'
       }]`;
 
-      closeCase(caseItem.id, fullNotes);
-      notify(`ปิดเคส ${caseItem.id} และส่งคำตอบเรียบร้อยแล้ว`, { title: 'ปิดเคสสำเร็จ', tone: 'success' });
+      addChatMessage(caseItem.id, fullNotes, role, 'เจ้าหน้าที่ ปณท (บันทึกตรวจสอบ)', true);
+      submitResolution(caseItem.id, replyMessage.trim());
+      notify(`ส่งผลแก้ไข ${caseItem.id} ให้ร้านค้ายืนยันแล้ว`, { title: 'รอร้านค้ายืนยัน', tone: 'success' });
       onSuccess();
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'ปิดเคสไม่สำเร็จ', { title: 'เกิดข้อผิดพลาด', tone: 'danger' });
+      notify(err instanceof Error ? err.message : 'ส่งผลแก้ไขไม่สำเร็จ', { title: 'เกิดข้อผิดพลาด', tone: 'danger' });
     } finally {
       setIsSubmitting(false);
     }
@@ -204,7 +194,7 @@ export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClos
             <ShieldCheck size={24} color="#059669" />
             <div>
               <h2 style={{ fontSize: '1.15rem', margin: 0, color: 'var(--thp-dark)' }}>
-                ตรวจสอบเงื่อนไขก่อนปิดเคส
+                ตรวจสอบเงื่อนไขก่อนส่งผลแก้ไข
               </h2>
               <span style={{ fontSize: '0.8rem', color: 'var(--thp-muted)' }}>
                 เคส {caseItem.id} • เลขพัสดุ {caseItem.trackingNumber} • {caseItem.companyName}
@@ -313,11 +303,11 @@ export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClos
                   {isDeliveredInCentral ? (
                     <>
                       ✓ ระบบกลางยืนยันมี <strong>สถานะรับพัสดุ / นำจ่ายสำเร็จ</strong> แล้ว
-                      สามารถปิดเคสได้ทันทีและตอบกลับร้านค้าว่าเรียบร้อยแล้ว
+                      สามารถส่งผลแก้ไขได้ทันทีและตอบกลับร้านค้าว่าเรียบร้อยแล้ว
                     </>
                   ) : (
                     <>
-                      ⚠️ ระบบกลางยังไม่พบสถานะรับพัสดุสำเร็จ กรุณาประสานงานเจ้าหน้าที่นำจ่ายเพื่ออัปเดตสถานะก่อนปิดเคส
+                      ⚠️ ระบบกลางยังไม่พบสถานะรับพัสดุสำเร็จ กรุณาประสานงานเจ้าหน้าที่นำจ่ายเพื่ออัปเดตสถานะก่อนส่งผลแก้ไข
                     </>
                   )}
                 </div>
@@ -372,13 +362,13 @@ export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClos
                         }}
                       />
                       <div style={{ fontSize: '0.84rem', color: '#14532D' }}>
-                        ✓ พบภาพถ่ายยืนยันการนำส่งพัสดุ (POD) ในระบบ <strong>สามารถตอบกลับและปิดเคสได้ทันที</strong>
+                        ✓ พบภาพถ่ายยืนยันการนำส่งพัสดุ (POD) ในระบบ <strong>สามารถตอบกลับและส่งผลแก้ไขได้ทันที</strong>
                       </div>
                     </div>
                   ) : (
                     <div style={{ fontSize: '0.84rem', color: '#78350F', lineHeight: 1.45 }}>
                       ⚠️ <strong>ยังไม่มีภาพหลักฐาน:</strong> กฎระบุว่า หากยังไม่มีภาพหลักฐาน{' '}
-                      <u>จะต้องโทรคอนเฟิร์มกับปลายทางว่าได้รับจริงหรือไม่</u> ถ้าได้รับจริงจึงจะตอบกลับและปิดเคสได้
+                      <u>จะต้องโทรคอนเฟิร์มกับปลายทางว่าได้รับจริงหรือไม่</u> ถ้าได้รับจริงจึงจะตอบกลับและส่งผลแก้ไขได้
                     </div>
                   )}
                 </div>
@@ -619,7 +609,7 @@ export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClos
             <div className="form-group">
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--thp-dark)' }}>
-                  ข้อความตอบกลับร้านค้าเมื่อปิดเคส (Auto Reply Message):
+                  ข้อความตอบกลับร้านค้าเมื่อส่งผลแก้ไข (Auto Reply Message):
                 </span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }}>
                   ส่งผ่านแชท MyOrder อัตโนมัติ
@@ -636,7 +626,7 @@ export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClos
 
             <div className="form-group">
               <label style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--thp-dark)' }}>
-                บันทึกการทำงาน / หมายเหตุปิดเคส (Internal Audit Note):
+                บันทึกการทำงาน / หมายเหตุส่งผลแก้ไข (Internal Audit Note):
               </label>
               <input
                 type="text"
@@ -691,7 +681,7 @@ export const CloseCaseModal: React.FC<CloseCaseModalProps> = ({ caseItem, onClos
             }}
           >
             <CheckCircle2 size={16} />
-            <span>{isSubmitting ? 'กำลังปิดเคส...' : 'ยืนยันปิดเคส & ตอบกลับเรียบร้อย'}</span>
+            <span>{isSubmitting ? 'กำลังส่งผลแก้ไข...' : 'ส่งผลแก้ไขให้ร้านค้ายืนยัน'}</span>
           </button>
         </div>
       </div>

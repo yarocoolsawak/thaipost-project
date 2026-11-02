@@ -1,23 +1,24 @@
 import React from 'react';
 import type { CaseItem } from '../../types/case';
+import { getCecLabel } from '../../data/cecRegions';
+import { POST_OFFICE_SOURCE, findPostOffice } from '../../data/postOffices';
 import { formatPostalStatus } from './StatusBadge';
+import { RoutingAlertChip } from './RoutingAlert';
 import { HelpCircle, ShoppingBag, Mail, Copy } from 'lucide-react';
 
-// CEC line: the assigned CEC, or a blank placeholder until QMS confirms the destination
-export const CecCell: React.FC<{ caseItem: CaseItem }> = ({ caseItem }) => {
-  if (caseItem.assignedCecId === undefined) {
-    return (
-      <span className="cec-blank-chip" title="ยังระบุ CEC ไม่ได้ ระบบจะใส่ให้อัตโนมัติเมื่อ QMS ยืนยันพื้นที่ปลายทางของพัสดุ">
-        <HelpCircle size={11} /> รอระบุ CEC
+// CEC line: the CEC from the recipient's postal code, plus a marker when QMS shows the parcel somewhere else
+export const CecCell: React.FC<{ caseItem: CaseItem }> = ({ caseItem }) => (
+  <>
+    {caseItem.assignedCecId === undefined ? (
+      <span className="cec-blank-chip" title="รหัสไปรษณีย์ผู้รับไม่มีในตาราง ปณ.ส่วนกลางต้องเลือก CEC">
+        <HelpCircle size={11} /> ยังไม่ระบุ CEC
       </span>
-    );
-  }
-  return (
-    <div style={{ fontSize: '0.75rem', color: '#4338CA', fontWeight: 600 }}>
-      CEC {caseItem.assignedCecId}
-    </div>
-  );
-};
+    ) : (
+      <div style={{ fontSize: '0.75rem', color: '#4338CA', fontWeight: 600 }}>{getCecLabel(caseItem.assignedCecId)}</div>
+    )}
+    <RoutingAlertChip caseItem={caseItem} />
+  </>
+);
 
 // Office names sometimes already carry the zip, e.g. "ปณ.เมืองขอนแก่น (40000)" — show it once, on its own line
 const stripZip = (name: string) => name.replace(/\s*\(\d{5}\)\s*$/, '').trim();
@@ -28,10 +29,13 @@ export const DestinationCell: React.FC<{ caseItem: CaseItem }> = ({ caseItem }) 
     <div style={{ fontWeight: 600, color: 'var(--thp-navy)' }}>
       {stripZip(caseItem.assignedBranchName || caseItem.parcelInfo.destPostOffice)}
     </div>
-    <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }} title="รหัสไปรษณีย์ปลายทาง">
+    <div style={{ fontSize: '0.75rem', color: 'var(--thp-muted)' }} title={findPostOffice(caseItem.assignedBranchCode || caseItem.parcelInfo.destZipCode) ? `ที่มา ${POST_OFFICE_SOURCE.filename} · ${POST_OFFICE_SOURCE.asOfLabel}` : 'ไม่พบรหัสในตารางที่ทำการ ต้องตรวจสอบสาขา'}>
       รหัส{' '}
-      <span style={{ fontFamily: 'var(--font-en)', fontWeight: 600, color: 'var(--thp-slate)' }}>{caseItem.parcelInfo.destZipCode}</span>
+      <span style={{ fontFamily: 'var(--font-en)', fontWeight: 600, color: 'var(--thp-slate)' }}>{caseItem.assignedBranchCode || caseItem.parcelInfo.destZipCode}</span>
     </div>
+    {caseItem.assignedBranchCode && caseItem.assignedBranchCode !== caseItem.parcelInfo.destZipCode && (
+      <div style={{ fontSize: '0.7rem', color: 'var(--thp-muted)' }}>รหัสผู้รับ {caseItem.parcelInfo.destZipCode}</div>
+    )}
     <CecCell caseItem={caseItem} />
   </div>
 );

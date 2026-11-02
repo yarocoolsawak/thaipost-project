@@ -385,6 +385,29 @@ export const KNOWN_PARCELS: Record<string, ParcelInfo> = {
       { timestamp: eventStamp(104.83), statusCode: '201', status: 'ออกจากที่ทำการ/ศูนย์ไปรษณีย์', location: 'ศป.นครราชสีมา', description: 'สิ่งของออกจากศูนย์คัดแยก ยังไม่มีข้อมูลการรับเข้าศูนย์ปลายทาง' }
     ]
   },
+  // Postal code typo demo: address is in Nakhon Ratchasima (30000) but the order says 38000 (Bueng Kan)
+  'EN100200321TH': {
+    trackingNumber: 'EN100200321TH',
+    originPostOffice: 'ปณ.บางรัก (10500)',
+    originZipCode: '10500',
+    destPostOffice: 'ปณ.บึงกาฬ (38000)',
+    destZipCode: '38000',
+    senderName: 'Gadget Corner BKK (MyOrder)',
+    receiverName: 'คุณวรรณา ศรีสวัสดิ์',
+    receiverPhone: '089-552-XXXX',
+    receiverAddress: '45/2 ถ.มิตรภาพ ต.ในเมือง อ.เมืองนครราชสีมา จ.นครราชสีมา 38000',
+    currentPostalStatus: '40 - ผิดเขต',
+    currentStatusCode: '40',
+    signerName: undefined,
+    weightKg: 0.8,
+    events: [
+      { timestamp: eventStamp(50), statusCode: '103', status: 'รับฝาก', location: 'ปณ.บางรัก', officeZipCode: '10500', description: 'รับฝากเข้าระบบ (EMS)' },
+      { timestamp: eventStamp(40), statusCode: '211', status: 'รับเข้า ณ ศูนย์คัดแยก', location: 'ศป.หลักสี่', officeZipCode: '10210', description: 'คัดแยกตามรหัสไปรษณีย์ปลายทาง 38000' },
+      { timestamp: eventStamp(26), statusCode: '220', status: 'ถึงที่ทำการ/ศูนย์ไปรษณีย์ (เปิดถุง/รับเข้า)', location: 'ศป.อุดรธานี', officeZipCode: '41000', description: 'เปิดถุงและส่งต่อไปยังที่ทำการปลายทาง', isBagOpenEvent: true },
+      { timestamp: eventStamp(14), statusCode: '3', status: 'ถึง ปณ.ปลายทาง เตรียมนำจ่าย', location: 'ปณ.บึงกาฬ', officeZipCode: '38000', description: 'สิ่งของถึงที่ทำการปลายทาง เตรียมนำจ่าย' },
+      { timestamp: eventStamp(6), statusCode: '40', status: 'ผิดเขต', location: 'ปณ.บึงกาฬ', officeZipCode: '38000', description: 'ที่อยู่ผู้รับอยู่ อ.เมืองนครราชสีมา ไม่อยู่ในเขตนำจ่าย ส่งต่อที่ทำการที่ถูกต้อง' }
+    ]
+  },
   'EN100200304TH': {
     trackingNumber: 'EN100200304TH',
     originPostOffice: 'ปณ.ลำลูกกา (12150)',
@@ -656,8 +679,18 @@ const UPCOMING_EVENTS: Record<string, { event: Omit<TrackingEvent, 'timestamp'>;
       postalStatus: 'ถึงศูนย์คัดแยกปลายทาง'
     },
     {
-      event: { status: 'ถึงที่ทำการปลายทาง', location: 'ปณ.เมืองอุบลราชธานี', description: 'สิ่งของถึงที่ทำการปลายทาง รอนำจ่าย' },
+      event: { status: 'ถึงที่ทำการปลายทาง', location: 'ปณ.เมืองอุบลราชธานี', officeZipCode: '34000', description: 'สิ่งของถึงที่ทำการปลายทาง รอนำจ่าย' },
       postalStatus: 'ถึงที่ทำการปลายทาง รอนำจ่าย'
+    }
+  ],
+  'EN100200321TH': [
+    {
+      event: { statusCode: '201', status: 'ออกจากที่ทำการ/ศูนย์ไปรษณีย์', location: 'ปณ.บึงกาฬ', officeZipCode: '38000', description: 'ส่งต่อพัสดุไปที่ทำการตามที่อยู่ผู้รับ' },
+      postalStatus: '201 - ส่งต่อไปที่ทำการตามที่อยู่ผู้รับ'
+    },
+    {
+      event: { statusCode: '3', status: 'ถึง ปณ.ปลายทาง เตรียมนำจ่าย', location: 'ปณ.นครราชสีมา', officeZipCode: '30000', description: 'สิ่งของถึงที่ทำการปลายทาง เตรียมนำจ่าย' },
+      postalStatus: '3 - ถึง ปณ.ปลายทาง เตรียมนำจ่าย'
     }
   ],
   'EN100200305TH': [

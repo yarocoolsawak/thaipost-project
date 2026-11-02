@@ -1,3 +1,4 @@
+import { CaseLifecyclePanel } from '../common/CaseLifecyclePanel';
 import React, { useState } from 'react';
 import type { CaseItem, UserRole } from '../../types/case';
 import { useCases } from '../../context/CaseContext';
@@ -37,7 +38,10 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
 
   const cec = CEC_REGIONS.find(c => c.id === caseItem.assignedCecId);
   const isMerchant = role === 'MERCHANT';
-  const hasAnswer = !!caseItem.centralReview;
+  const hasAnswer = caseItem.status === 'ANSWER_SENT_TO_MERCHANT' && !!caseItem.confirmation;
+  const resolutionMessage = [...caseItem.chatHistory].reverse().find(message => !message.isInternalNote && ['CENTRAL', 'CEC', 'BRANCH'].includes(message.senderRole) && message.timestamp === caseItem.confirmation?.sentAt);
+  const resolutionText = resolutionMessage?.message || caseItem.centralReview?.approvedAnswer;
+  const resolutionAt = caseItem.confirmation?.sentAt || caseItem.centralReview?.reviewedAt;
 
   // MyOrder admin sees every milestone (action + time, never internal details like officer phone numbers);
   // shops only ever see the latest update, not the internal case status
@@ -56,8 +60,8 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
     const result = await syncParcelTracking(caseItem.id);
     setSyncing(false);
     setSyncMessage(
-      result === 'CEC_ASSIGNED' && !isMerchant
-        ? 'QMS อัปเดตสถานะพัสดุแล้ว และระบบระบุ CEC ผู้รับผิดชอบให้เรียบร้อย'
+      result === 'ROUTING_ALERT' && !isMerchant
+        ? 'QMS อัปเดตสถานะพัสดุแล้ว พัสดุไปอยู่พื้นที่ของ CEC อื่น ระบบแจ้ง ปณ.ส่วนกลางให้ตรวจแล้ว'
         : result !== 'NO_CHANGE'
         ? 'QMS อัปเดตสถานะพัสดุแล้ว'
         : 'QMS ยังไม่มีสถานะพัสดุใหม่'
@@ -78,11 +82,11 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
 
   const handleClose = async () => {
     const ok = await confirmDialog(`ยืนยันว่าได้รับคำตอบแล้ว และต้องการปิดเคส ${caseItem.id}?`, {
-      title: 'รับทราบคำตอบ',
+      title: 'ยอมรับผลแก้ไข',
       confirmLabel: 'ปิดเคส',
       tone: 'success'
     });
-    if (ok) closeCase(caseItem.id, 'ร้านค้ายืนยันรับทราบคำตอบผ่าน MyOrder');
+    if (ok) closeCase(caseItem.id, 'ร้านค้ายืนยันยอมรับผลแก้ไขผ่าน MyOrder');
   };
 
   return (
@@ -126,6 +130,7 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
         </div>
 
         <div className="modal-body">
+          <CaseLifecyclePanel caseItem={caseItem} />
           {tab === 'STATUS' ? (
             <>
               {isMerchant ? <LatestUpdate caseItem={caseItem} /> : <CaseProgressStepper caseItem={caseItem} />}
@@ -156,7 +161,7 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
                   {cec ? (
                     <>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#4338CA', fontWeight: 600 }}>
-                        <MapPin size={14} /> CEC {cec.id}
+                        <MapPin size={14} /> {cec.name}
                       </div>
                       <div style={{ color: 'var(--thp-muted)' }}>ปลายทาง: {caseItem.assignedBranchName || caseItem.parcelInfo.destPostOffice}</div>
                     </>
@@ -187,16 +192,16 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
               </div>
 
               {/* Approved answer */}
-              {hasAnswer ? (
+              {resolutionText ? (
                 <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '10px', padding: '0.9rem 1rem' }}>
                   <div style={{ fontWeight: 700, color: '#065F46', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     <CheckCircle2 size={16} /> คำตอบจากไปรษณีย์ไทย
                   </div>
                   <p style={{ marginTop: '0.35rem', fontSize: '0.88rem', color: '#064E3B', whiteSpace: 'pre-wrap' }}>
-                    {caseItem.centralReview?.approvedAnswer}
+                    {resolutionText}
                   </p>
                   <div style={{ fontSize: '0.72rem', color: '#047857', marginTop: '0.35rem' }}>
-                    ตอบเมื่อ {new Date(caseItem.centralReview!.reviewedAt).toLocaleString('th-TH')}
+                    ตอบเมื่อ {resolutionAt ? new Date(resolutionAt).toLocaleString('th-TH') : '-'}
                   </div>
                 </div>
               ) : (
@@ -266,7 +271,7 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
               )}
 
               {/* Follow-up messages */}
-              {caseItem.status !== 'CLOSED' && (
+              {(
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     <MessageSquare size={15} /> ข้อความเพิ่มเติมจากฝั่ง MyOrder ({Math.max(merchantMessages.length - 1, 0)})
@@ -317,7 +322,7 @@ export const MerchantCaseDetailModal: React.FC<MerchantCaseDetailModalProps> = (
           </button>
           {isMerchant && hasAnswer && caseItem.status !== 'CLOSED' && (
             <button type="button" className="btn-success" onClick={handleClose}>
-              <CheckCircle2 size={15} /> รับทราบคำตอบ ปิดเคส
+              <CheckCircle2 size={15} /> ยอมรับผลแก้ไขและปิดเคส
             </button>
           )}
         </div>

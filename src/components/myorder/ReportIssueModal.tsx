@@ -59,7 +59,7 @@ export const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ order, onClo
   const { currentShop, reportOrderIssue } = useMyOrder();
   const { checkDuplicate } = useCases();
   // Parcel already has a case that is not closed -> ask first: follow that case, or open a new one
-  const existingCase = order.trackingNumber ? checkDuplicate(order.trackingNumber) : undefined;
+  const existingCase = order.trackingNumber ? checkDuplicate(order.trackingNumber, { orderId: order.orderId, shopId: order.shopId, shopName: '' }) : undefined;
   const [confirmNewCase, setConfirmNewCase] = useState(false);
   const blockedByDuplicate = !!existingCase && !confirmNewCase;
   const [category, setCategory] = useState<IssueCategory>(

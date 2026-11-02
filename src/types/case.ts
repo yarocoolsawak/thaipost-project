@@ -1,6 +1,5 @@
 export type CaseStatus =
   | 'NEW'
-  | 'PENDING_CEC_ASSIGNMENT'  // ส่งเข้า ปณ. แล้ว แต่ยังระบุ CEC ผู้รับผิดชอบไม่ได้ (รอสถานะพัสดุ)
   | 'CENTRAL_REVIEWING'
   | 'SENT_TO_CEC'
   | 'WAITING_CEC_REPLY'
@@ -72,6 +71,7 @@ export interface TrackingEvent {
   status: string;
   statusCode?: string; // รหัสสถานะตาม THP Developer Guide เช่น '103', '201', '220', '301', '303', '304', '401', '501'
   location: string;
+  officeZipCode?: string; // รหัสไปรษณีย์ของที่ทำการที่สแกนสถานะนี้ (QMS ส่งมากับทุกสถานะ)
   description: string;
   recipientOrSigner?: string;
   isBagOpenEvent?: boolean; // ระบุว่าเป็นเหตุการณ์เปิดถุง (รหัส 220)
@@ -127,10 +127,26 @@ export interface CecInfo {
   name: string;
   code: string;
   regionName: string;
-  provinces: string[];
-  memberCount: number;
-  contactEmail: string;
-  phone: string;
+  officeCount: number;
+  sourceAsOf: string;
+  contactEmail?: string;
+  phone?: string;
+}
+
+export type RoutingAlertKind =
+  | 'CEC_MISMATCH' // parcel reached a delivery office that belongs to another CEC
+  | 'WRONG_AREA'   // delivery office reported ผิดเขต / จ่าหน้าไม่ชัด / ไม่มีเลขบ้าน / ย้ายที่อยู่
+  | 'UNKNOWN_ZIP'; // recipient's postal code is not in the postal code → CEC table
+
+export interface RoutingAlert {
+  kind: RoutingAlertKind;
+  key: string;              // identifies the QMS event behind the alert
+  detectedAt: string;
+  message: string;
+  statusCode?: string;
+  officeName?: string;      // where the parcel actually is
+  officeZipCode?: string;
+  suggestedCecId?: number;  // CEC of that office
 }
 
 export interface BranchContactLog {
@@ -144,6 +160,27 @@ export interface BranchContactLog {
 }
 
 export interface CaseItem {
+  creationSource?: 'MERCHANT' | 'AUTO_SLA';
+  shipmentId?: string;
+  parcelCycleVerified?: boolean; // mock provider/order binding; production requires provider cycle reference
+  deliveryDisputed?: boolean;
+  merchantEngaged?: boolean;
+  resolutionVersion?: number;
+  confirmation?: {
+    version: number;
+    sentAt: string;
+    timeoutHours: number;
+    dueAt?: string;
+    followupAt: string;
+    reminderAt?: string;
+    remindedAt?: string;
+    escalatedAt?: string;
+  };
+  closeReason?: 'MERCHANT_ACCEPTED' | 'DELIVERED_AUTO' | 'NO_RESPONSE_TIMEOUT';
+  closedAt?: string;
+  acceptedBy?: string;
+  acceptedAt?: string;
+  acceptedResolutionVersion?: number;
   id: string;                     // e.g. "TP-2026-0042"
   trackingNumber: string;         // e.g. "ED882194821TH"
   companyName: string;            // MyOrder shop name, e.g. "Healthy Snack by Nok"
@@ -162,9 +199,10 @@ export interface CaseItem {
   
   status: CaseStatus;
   
-  assignedCecId?: number;         // 1 - 14 (blank until destination CEC can be determined)
+  assignedCecId?: number;         // 1 - 14, from the recipient's postal code (blank only when the code is not in the CEC table)
   assignedCecName?: string;
   assignedBranchName?: string;
+  assignedBranchCode?: string; // exact office code from the supplied directory
   
   // SLA Fields (นับจากวันเปิดถุง: กทม./ภาคเดียวกัน 3 วัน, ข้ามจังหวัด 3-5 วัน, เก็บพัสดุ 7 วัน)
   createdAt: string;              // ISO String
@@ -208,6 +246,10 @@ export interface CaseItem {
   parcelInfo: ParcelInfo;
   emails?: OfficialEmailRecord[];     // official request emails the shop sent to ThaiPost
   
+  // Where QMS says the parcel really is vs the CEC picked from the recipient's postal code
+  routingAlert?: RoutingAlert;
+  routingAlertDismissedKey?: string; // central confirmed the current CEC for this QMS event
+
   // Duplicate detection link
   duplicateOfCaseId?: string;
   linkedDuplicateCaseIds?: string[];

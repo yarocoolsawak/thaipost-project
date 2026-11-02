@@ -19,11 +19,10 @@ export const AnalyticsDashboard: React.FC = () => {
   // Workload distribution across 14 CECs
   const cecWorkloads = CEC_REGIONS.map(cec => {
     const liveCount = cases.filter(c => c.assignedCecId === cec.id).length;
-    // base simulation proportion
-    const simulatedDaily = Math.round((cec.memberCount / 5000) * 1048) + liveCount * 3;
+    // Use the cases in this prototype; the office directory has no workload or member counts.
     return {
       cec,
-      count: simulatedDaily,
+      count: liveCount,
       liveCount
     };
   });
@@ -49,7 +48,7 @@ export const AnalyticsDashboard: React.FC = () => {
             <span>ThaiPost Operations & SLA Analytics Dashboard</span>
           </h1>
           <p>
-            ภาพรวมปริมาณงานประจำวัน (~1,000 เคส/วัน) อัตราความสำเร็จ SLA 3 วัน การกระจายงานกลุ่ม CEC 14 เขต และสถิติปัญหาพัสดุ
+            ภาพรวมปริมาณงานประจำวัน (~1,000 เคส/วัน) อัตราความสำเร็จ SLA 3 วัน การกระจายงานกลุ่ม CEC 14 กลุ่ม และสถิติปัญหาพัสดุ
           </p>
         </div>
       </div>
@@ -128,10 +127,10 @@ export const AnalyticsDashboard: React.FC = () => {
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--thp-dark)' }}>
-              การกระจาย Workload รายกลุ่ม CEC 1 - 14 ทั่วประเทศ
+              เคสใน prototype แยกตามกลุ่ม CEC
             </div>
             <span style={{ fontSize: '0.78rem', color: 'var(--thp-muted)' }}>
-              รวมสมาชิก 14 กลุ่ม ~5,600 คน
+              ปน.1–4 / ปข.1–10 · ไม่ใช่ยอดงานจริง
             </span>
           </div>
 
@@ -140,7 +139,7 @@ export const AnalyticsDashboard: React.FC = () => {
               const pct = Math.round((item.count / maxWorkload) * 100);
               return (
                 <div key={item.cec.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: '65px', fontSize: '0.78rem', fontWeight: 600, color: 'var(--thp-slate)' }}>
+                  <div style={{ width: '90px', fontSize: '0.78rem', fontWeight: 600, color: 'var(--thp-slate)' }}>
                     {item.cec.code}
                   </div>
                   <div style={{ flex: 1, height: '14px', background: '#F1F5F9', borderRadius: '999px', overflow: 'hidden' }}>

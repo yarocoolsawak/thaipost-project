@@ -3,17 +3,16 @@ import type { CaseStatus, IssueCategory } from '../../types/case';
 
 export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
   NEW: 'เคสใหม่',
-  PENDING_CEC_ASSIGNMENT: 'รอระบุ CEC',
   CENTRAL_REVIEWING: 'ส่วนกลางตรวจ',
   SENT_TO_CEC: 'ส่ง CEC แล้ว',
   WAITING_CEC_REPLY: 'รอ CEC ตอบ',
   CEC_REPLIED: 'CEC ตอบแล้ว',
   WAITING_CENTRAL_REVIEW: 'รอตรวจคำตอบ',
   ANSWER_APPROVED: 'อนุมัติแล้ว',
-  ANSWER_SENT_TO_MERCHANT: 'ตอบร้านค้าแล้ว',
+  ANSWER_SENT_TO_MERCHANT: 'รอร้านค้ายืนยัน',
   SLA_EXCEEDED: 'เกิน SLA',
   CENTRAL_CONTACT_BRANCH: 'โทรตามสาขา',
-  CLOSED: 'ปิดเคสแล้ว'
+  CLOSED: 'Archived · ปิดเคสแล้ว'
 };
 
 export const ISSUE_CATEGORY_SHORT_LABELS: Record<IssueCategory, string> = {

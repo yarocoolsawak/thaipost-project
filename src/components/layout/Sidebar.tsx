@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCases } from '../../context/CaseContext';
+import { useCases, ROUTING_ALERT_FILTER } from '../../context/CaseContext';
 import { useMyOrder } from '../../context/MyOrderContext';
 import { MYORDER_CASE_FILTERS, matchesCaseFilter } from '../myorder/caseFilters';
 import {
@@ -15,7 +15,8 @@ import {
   ClipboardList,
   MonitorCheck,
   HelpCircle,
-  MailCheck
+  MailCheck,
+  MapPinX
 } from 'lucide-react';
 
 export type AppTab = 'CASES' | 'DASHBOARD' | 'ORDERS' | 'EMAILS';
@@ -143,7 +144,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div>2. เรื่องเข้าระบบ ปณ. และส่งตรงถึง CEC ปลายทาง</div>
           <div style={{ display: 'flex', gap: '0.3rem' }}>
             <HelpCircle size={13} style={{ flexShrink: 0, marginTop: 3, color: '#C2410C' }} />
-            <span>CEC ระบุจากสถานะพัสดุในระบบ QMS เท่านั้น ถ้าพัสดุยังไม่ถึงปลายทาง CEC จะว่างไว้ก่อน</span>
+            <span>CEC ระบุจากรหัสไปรษณีย์ผู้รับทันที ถ้าสถานะพัสดุจาก QMS ไปอยู่พื้นที่ CEC อื่น ระบบจะเตือน ปณ.ส่วนกลางให้ตรวจ</span>
           </div>
           <div>3. ร้านค้า แอดมิน MyOrder และ ปณ.ส่วนกลาง เห็นสถานะเดียวกัน</div>
         </div>
@@ -202,17 +203,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="count-badge">{counts.open}</span>
         </button>
 
-        <button
-          type="button"
-          className={`nav-item-btn ${statusFilter === 'PENDING_CEC_ASSIGNMENT' ? 'active' : ''}`}
-          onClick={() => setStatusFilter('PENDING_CEC_ASSIGNMENT')}
-        >
-          <div className="nav-item-left">
-            <HelpCircle size={16} />
-            <span>รอระบุ CEC</span>
-          </div>
-          {counts.pendingCec > 0 && <span className="count-badge warning">{counts.pendingCec}</span>}
-        </button>
+        {role === 'CENTRAL' && (
+          <button
+            type="button"
+            className={`nav-item-btn ${statusFilter === ROUTING_ALERT_FILTER ? 'active' : ''}`}
+            onClick={() => setStatusFilter(ROUTING_ALERT_FILTER)}
+            title="เคสที่สถานะพัสดุจาก QMS บอกว่าพัสดุไปอยู่พื้นที่ของ CEC อื่น หรือสาขาแจ้งผิดเขต"
+          >
+            <div className="nav-item-left">
+              <MapPinX size={16} />
+              <span>ปลายทางไม่ตรง CEC</span>
+            </div>
+            {counts.routingAlerts > 0 && <span className="count-badge danger">{counts.routingAlerts}</span>}
+          </button>
+        )}
 
         <button
           type="button"

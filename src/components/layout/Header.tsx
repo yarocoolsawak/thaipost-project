@@ -5,6 +5,8 @@ import { CEC_REGIONS } from '../../data/cecRegions';
 import { useMyOrder } from '../../context/MyOrderContext';
 import { confirmDialog } from '../../utils/dialog';
 import { ThaiPostStatusGuideModal } from '../common/ThaiPostStatusGuideModal';
+import { ClosureSettingsModal } from '../common/ClosureSettingsModal';
+import { PostOfficeDirectoryModal } from '../common/PostOfficeDirectoryModal';
 import {
   Store,
   MonitorCheck,
@@ -31,6 +33,8 @@ export const Header: React.FC = () => {
   } = useCases();
   const { shops, selectedShopId, setSelectedShopId } = useMyOrder();
   const [showGuideModal, setShowGuideModal] = useState(false);
+  const [showClosureSettings, setShowClosureSettings] = useState(false);
+  const [showOfficeDirectory, setShowOfficeDirectory] = useState(false);
 
   const handleReset = async () => {
     const ok = await confirmDialog(
@@ -108,6 +112,12 @@ export const Header: React.FC = () => {
 
         {/* Right: SLA alert & data actions */}
         <div className="header-actions">
+          {role === 'CENTRAL' && <button type="button" className="btn-secondary" onClick={() => setShowClosureSettings(true)}>ตั้งเวลาปิดเคส</button>}
+          <button type="button" className="header-action-btn"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.4rem 0.65rem', borderRadius: 6, color: '#FFFFFF', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', cursor: 'pointer' }}
+            onClick={() => setShowOfficeDirectory(true)} title="ค้นหาที่ทำการ 1,200 แห่งและกลุ่ม CEC จากไฟล์ ปณท">
+            <Building2 size={14} /> <span>ที่ทำการ / CEC</span>
+          </button>
           {/* CEC Selector if role is CEC */}
           {role === 'CEC' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -262,6 +272,8 @@ export const Header: React.FC = () => {
 
       {/* 30 Thailand Post Status Codes Modal */}
       <ThaiPostStatusGuideModal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)} />
+      {showClosureSettings && <ClosureSettingsModal onClose={() => setShowClosureSettings(false)} />}
+      {showOfficeDirectory && <PostOfficeDirectoryModal onClose={() => setShowOfficeDirectory(false)} />}
     </header>
   );
 };
